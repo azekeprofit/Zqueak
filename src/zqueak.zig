@@ -2,6 +2,14 @@ const std = @import("std");
 const win32 = @import("win32");
 const w = win32.everything;
 
+fn packRgb(r: u8, g: u8, b: u8) u32 {
+    return (@as(u32, b) << 16) |
+        (@as(u32, g) << 8) |
+        (@as(u32, r));
+}
+
+const transparent = packRgb(0, 50, 0);
+
 const WINDOW_CLASS_NAME = w.L("ZigBlankWindow");
 
 fn wndProc(
@@ -27,7 +35,7 @@ pub fn main() !void {
         .lpfnWndProc = wndProc,
         .hInstance = hInstance,
         .hCursor = w.LoadCursorW(null, w.IDC_CROSS),
-        .hbrBackground = w.GetStockObject(w.BLACK_BRUSH),
+        .hbrBackground = w.CreateSolidBrush(transparent),
         .lpszClassName = WINDOW_CLASS_NAME,
         .cbClsExtra = 0,
         .cbWndExtra = 0,
@@ -38,7 +46,7 @@ pub fn main() !void {
     if (w.RegisterClassW(&wc) == 0) return error.RegisterClassFailed;
 
     const hwnd = w.CreateWindowExW(
-        w.WINDOW_EX_STYLE{},
+        w.WINDOW_EX_STYLE{ .LAYERED = 1 },
         WINDOW_CLASS_NAME,
         w.L("Blank Zig Window"),
         w.WINDOW_STYLE{
@@ -59,6 +67,10 @@ pub fn main() !void {
         hInstance,
         null,
     ) orelse return error.CreateWindowFailed;
+
+    _ = w.SetLayeredWindowAttributes(hwnd, transparent, 0, w.LWA_COLORKEY);
+
+    _ = w.SetWindowLongW(hwnd, w.GWL_STYLE, @bitCast(w.WS_POPUP));
 
     _ = w.ShowWindow(hwnd, w.SW_SHOWMAXIMIZED);
 
