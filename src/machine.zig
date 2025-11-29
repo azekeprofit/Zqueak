@@ -17,11 +17,54 @@ pub fn letterToVK(s: c_char) w.VIRTUAL_KEY {
     };
 }
 
-const horizonthal = "qwfpbarstgzxcdvjluykneiomh"; // "qwfpbarstgzxcdv";
-const vertical = "qwfpbarstgzxcdvjluykneiomh"; //"jluy;kneiom,.-";
+pub const horizonthal = "qwfpbarstgzxcdvjluykneiomh"; // "qwfpbarstgzxcdv";
+pub const vertical = "qwfpbarstgzxcdvjluykneiomh"; //"jluy;kneiom,.-";
 
-const boardlineLen = 10;
-const boardHeight = 3;
-const boardChars = "qwfpbjluy;arstgkneiozxcdvmh,.-";
+pub var labels: [vertical.len][horizonthal.len][3:0]u16 = undefined;
+pub fn initLabels() void {
+    for (vertical, 0..) |first, i| {
+        for (horizonthal, 0..) |second, j| {
+            labels[i][j] = .{ @intCast(first), @intCast(' '), @intCast(second) };
+        }
+    }
+}
+
+pub const pos = extern struct {
+    x: i32,
+    y: i32,
+};
+
+pub var axisSize = pos{ .x = 0, .y = 0 };
+pub var labelSize = pos{ .x = 0, .y = 0 };
+pub var screenSize = pos{ .x = 0, .y = 0 };
+
+pub fn initDimensions(hwnd: ?w.HWND) void {
+    axisSize = pos{ .x = horizonthal.len, .y = vertical.len };
+    const monitor = w.MonitorFromWindow(hwnd, w.MONITOR_DEFAULTTONEAREST);
+    var info = w.MONITORINFO{ .cbSize = @sizeOf(w.MONITORINFO), .dwFlags = 0, .rcMonitor = w.RECT{ .left = 0, .bottom = 0, .right = 0, .top = 0 }, .rcWork = w.RECT{ .bottom = 0, .left = 0, .right = 0, .top = 0 } };
+
+    _ = w.GetMonitorInfoW(monitor, &info);
+    screenSize = pos{ .x = info.rcMonitor.right - info.rcMonitor.left, .y = info.rcMonitor.bottom - info.rcMonitor.top };
+    labelSize = pos{ .x = @divTrunc(screenSize.x, axisSize.x), .y = @divTrunc(screenSize.y, axisSize.y) };
+}
+pub fn drawLabels(hwnd: ?w.HWND) void {
+    const hInstance = w.GetModuleHandleW(null);
+    initDimensions(hwnd);
+
+    for (0..horizonthal.len) |i| {
+        for (0..vertical.len) |j| {
+            const x: i32 = @divTrunc((@as(i32, @intCast(i)) * screenSize.x), axisSize.x);
+            const y: i32 = @divTrunc((@as(i32, @intCast(j)) * screenSize.y), axisSize.y);
+            _ = w.CreateWindowExW(w.WINDOW_EX_STYLE{}, w.L("STATIC"), &labels[i][j], w.WINDOW_STYLE{
+                .VISIBLE = 1,
+                .CHILD = 1,
+            }, x, y, labelSize.x, labelSize.y, hwnd, null, hInstance, null);
+        }
+    }
+}
+
+pub const boardlineLen = 10;
+pub const boardHeight = 3;
+pub const boardChars = "qwfpbjluy;arstgkneiozxcdvmh,.-";
 
 //    private bool rightMouse = false;

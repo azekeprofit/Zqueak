@@ -1,15 +1,24 @@
 const std = @import("std");
 const win32 = @import("win32");
 const w = win32.everything;
+const m = @import("machine.zig");
+
+extern "gdi32" fn SetBkColor(
+    hdc: w.WPARAM,
+    color: u32,
+) callconv(.winapi) u32;
+
+extern "gdi32" fn CreateSolidBrush(
+    color: u32,
+) callconv(.winapi) w.LRESULT;
 
 fn packRgb(r: u8, g: u8, b: u8) u32 {
     return (@as(u32, b) << 16) |
         (@as(u32, g) << 8) |
         (@as(u32, r));
 }
-
 const transparent = packRgb(0, 50, 0);
-
+var tBrush: ?w.HBRUSH = undefined;
 const WINDOW_CLASS_NAME = w.L("ZigBlankWindow");
 
 fn wndProc(
@@ -23,11 +32,23 @@ fn wndProc(
             w.PostQuitMessage(0);
             return 0;
         },
+        w.WM_CTLCOLORSTATIC => {
+            _ = SetBkColor(wParam, transparent);
+            return @intCast(@intFromPtr(tBrush));
+        },
+        w.WM_MOUSEACTIVATE => w.MA_NOACTIVATE,
+        w.WM_CREATE => {
+            m.drawLabels(hwnd);
+            return 0;
+        },
         else => w.DefWindowProcW(hwnd, msg, wParam, lParam),
     };
 }
 
 pub fn main() !void {
+    m.initLabels();
+    tBrush = w.CreateSolidBrush(transparent);
+
     const hInstance = w.GetModuleHandleW(null);
 
     const wc = w.WNDCLASSW{
@@ -35,7 +56,7 @@ pub fn main() !void {
         .lpfnWndProc = wndProc,
         .hInstance = hInstance,
         .hCursor = w.LoadCursorW(null, w.IDC_CROSS),
-        .hbrBackground = w.CreateSolidBrush(transparent),
+        .hbrBackground = tBrush,
         .lpszClassName = WINDOW_CLASS_NAME,
         .cbClsExtra = 0,
         .cbWndExtra = 0,
@@ -48,20 +69,20 @@ pub fn main() !void {
     const hwnd = w.CreateWindowExW(
         w.WINDOW_EX_STYLE{ .LAYERED = 1 },
         WINDOW_CLASS_NAME,
-        w.L("Blank Zig Window"),
+        w.L("Zqueak"),
         w.WINDOW_STYLE{
             .VISIBLE = 0,
             .TABSTOP = 0,
             .GROUP = 0,
             .THICKFRAME = 0,
             .SYSMENU = 0,
-            .DLGFRAME = 1,
-            .BORDER = 1,
+            .DLGFRAME = 0,
+            .BORDER = 0,
         },
-        w.CW_USEDEFAULT,
-        w.CW_USEDEFAULT,
-        800,
-        600,
+        12000,
+        12000,
+        100,
+        100,
         null,
         null,
         hInstance,
