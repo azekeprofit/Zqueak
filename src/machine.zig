@@ -20,14 +20,15 @@ pub fn letterToVK(s: c_char) w.VIRTUAL_KEY {
 pub const horizonthal = "qwfpbarstgzxcdvjluykneiomh"; // "qwfpbarstgzxcdv";
 pub const vertical = "qwfpbarstgzxcdvjluykneiomh"; //"jluy;kneiom,.-";
 
-pub var labels: [vertical.len][horizonthal.len][3:0]u16 = undefined;
-pub fn initLabels() void {
+pub const labels = init: {
+    var result: [vertical.len][horizonthal.len][3:0]u16 = undefined;
     for (vertical, 0..) |first, i| {
         for (horizonthal, 0..) |second, j| {
-            labels[i][j] = .{ @intCast(first), @intCast(' '), @intCast(second) };
+            result[i][j] = .{ @intCast(first), @intCast(' '), @intCast(second) };
         }
     }
-}
+    break :init result;
+};
 
 pub const pos = extern struct {
     x: i32,
@@ -38,18 +39,17 @@ pub var axisSize = pos{ .x = 0, .y = 0 };
 pub var labelSize = pos{ .x = 0, .y = 0 };
 pub var screenSize = pos{ .x = 0, .y = 0 };
 
-pub fn initDimensions(hwnd: ?w.HWND) void {
+pub fn drawLabels(hwnd: ?w.HWND) void {
+    const hInstance = w.GetModuleHandleW(null);
+
     axisSize = pos{ .x = horizonthal.len, .y = vertical.len };
     const monitor = w.MonitorFromWindow(hwnd, w.MONITOR_DEFAULTTONEAREST);
     var info = w.MONITORINFO{ .cbSize = @sizeOf(w.MONITORINFO), .dwFlags = 0, .rcMonitor = w.RECT{ .left = 0, .bottom = 0, .right = 0, .top = 0 }, .rcWork = w.RECT{ .bottom = 0, .left = 0, .right = 0, .top = 0 } };
 
     _ = w.GetMonitorInfoW(monitor, &info);
+
     screenSize = pos{ .x = info.rcMonitor.right - info.rcMonitor.left, .y = info.rcMonitor.bottom - info.rcMonitor.top };
     labelSize = pos{ .x = @divTrunc(screenSize.x, axisSize.x), .y = @divTrunc(screenSize.y, axisSize.y) };
-}
-pub fn drawLabels(hwnd: ?w.HWND) void {
-    const hInstance = w.GetModuleHandleW(null);
-    initDimensions(hwnd);
 
     for (0..horizonthal.len) |i| {
         for (0..vertical.len) |j| {
@@ -58,6 +58,7 @@ pub fn drawLabels(hwnd: ?w.HWND) void {
             _ = w.CreateWindowExW(w.WINDOW_EX_STYLE{}, w.L("STATIC"), &labels[i][j], w.WINDOW_STYLE{
                 .VISIBLE = 1,
                 .CHILD = 1,
+                .ACTIVECAPTION = 1, // .CENTER
             }, x, y, labelSize.x, labelSize.y, hwnd, null, hInstance, null);
         }
     }

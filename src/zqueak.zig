@@ -46,7 +46,6 @@ fn wndProc(
 }
 
 pub fn main() !void {
-    m.initLabels();
     tBrush = w.CreateSolidBrush(transparent);
 
     const hInstance = w.GetModuleHandleW(null);
