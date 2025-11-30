@@ -34,8 +34,11 @@ fn wndProc(
             return 0;
         },
         w.WM_CTLCOLORSTATIC => {
-            _ = SetBkColor(wParam, transparent);
-            return @intCast(@intFromPtr(tBrush));
+            if (w.IsWindow(hwnd) != 0) {
+                _ = w.SetBkColor(@ptrFromInt(wParam), transparent);
+                return @intCast(@intFromPtr(w.GetStockObject(w.NULL_BRUSH)));
+            }
+            return 0;
         },
         w.WM_MOUSEACTIVATE => w.MA_NOACTIVATE,
         w.WM_CREATE => {
