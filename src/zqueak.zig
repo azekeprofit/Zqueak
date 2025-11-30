@@ -70,7 +70,7 @@ pub fn main() !void {
     if (w.RegisterClassW(&wc) == 0) return error.RegisterClassFailed;
 
     m.mainWindow = w.CreateWindowExW(
-        w.WINDOW_EX_STYLE{ .LAYERED = 1 },
+        w.WINDOW_EX_STYLE{ .LAYERED = 1, .TOPMOST = 1 },
         WINDOW_CLASS_NAME,
         w.L("Zqueak"),
         w.WINDOW_STYLE{
@@ -93,7 +93,6 @@ pub fn main() !void {
     ) orelse return error.CreateWindowFailed;
 
     _ = w.SetLayeredWindowAttributes(m.mainWindow, transparent, 0, w.LWA_COLORKEY);
-
     _ = w.SetWindowLongW(m.mainWindow, w.GWL_STYLE, @bitCast(w.WS_POPUP));
 
     // _ = w.ShowWindow(hwnd, w.SW_SHOWMAXIMIZED);

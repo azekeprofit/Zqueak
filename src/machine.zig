@@ -19,7 +19,7 @@ pub fn keyHandler(nCode: i32, wParam: w.WPARAM, lParam: w.LPARAM) callconv(.c) w
         if (vk == w.VIRTUAL_KEY.F13 and mode == Modes.Hidden) {
             mode = Modes.Grid;
             rightMouse = false;
-            _ = w.ShowWindow(mainWindow, w.SW_MAXIMIZE);
+            _ = w.ShowWindow(mainWindow, w.SW_SHOWMAXIMIZED);
             return 1;
         }
         if (vk == w.VIRTUAL_KEY.ESCAPE and mode != Modes.Hidden) {
@@ -68,6 +68,7 @@ var g_hFont: ?w.HFONT = undefined;
 
 pub fn destroy() void {
     if (g_hFont) |h| _ = w.DeleteObject(h);
+    if (hookHandle) |h| _ = w.UnhookWindowsHookEx(h);
 }
 
 pub fn drawLabels(hwnd: ?w.HWND) void {
