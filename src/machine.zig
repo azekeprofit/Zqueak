@@ -24,7 +24,7 @@ pub const labels = init: {
     var result: [vertical.len][horizonthal.len][3:0]u16 = undefined;
     for (vertical, 0..) |first, i| {
         for (horizonthal, 0..) |second, j| {
-            result[i][j] = .{ @intCast(first), @intCast(' '), @intCast(second) };
+            result[i][j] = .{ @intCast(first + 'A' - 'a'), @intCast(' '), @intCast(second + 'A' - 'a') };
         }
     }
     break :init result;
@@ -39,6 +39,12 @@ pub var axisSize = pos{ .x = 0, .y = 0 };
 pub var labelSize = pos{ .x = 0, .y = 0 };
 pub var screenSize = pos{ .x = 0, .y = 0 };
 
+var g_hFont: ?w.HFONT = undefined;
+
+pub fn destroy() void {
+    if (g_hFont) |h| _ = w.DeleteObject(h);
+}
+
 pub fn drawLabels(hwnd: ?w.HWND) void {
     const hInstance = w.GetModuleHandleW(null);
 
@@ -51,15 +57,33 @@ pub fn drawLabels(hwnd: ?w.HWND) void {
     screenSize = pos{ .x = info.rcMonitor.right - info.rcMonitor.left, .y = info.rcMonitor.bottom - info.rcMonitor.top };
     labelSize = pos{ .x = @divTrunc(screenSize.x, axisSize.x), .y = @divTrunc(screenSize.y, axisSize.y) };
 
+    g_hFont = w.CreateFontW(
+        20,
+        0,
+        0,
+        0,
+        w.FW_MEDIUM,
+        0,
+        0,
+        0,
+        w.DEFAULT_CHARSET,
+        w.OUT_DEFAULT_PRECIS,
+        w.CLIP_DEFAULT_PRECIS,
+        w.CLEARTYPE_QUALITY,
+        w.FF_DONTCARE,
+        w.L("Segoe UI"),
+    );
+
     for (0..horizonthal.len) |i| {
         for (0..vertical.len) |j| {
             const x: i32 = @divTrunc((@as(i32, @intCast(i)) * screenSize.x), axisSize.x);
             const y: i32 = @divTrunc((@as(i32, @intCast(j)) * screenSize.y), axisSize.y);
-            _ = w.CreateWindowExW(w.WINDOW_EX_STYLE{}, w.L("STATIC"), &labels[i][j], w.WINDOW_STYLE{
+            const newLabel = w.CreateWindowExW(w.WINDOW_EX_STYLE{}, w.L("STATIC"), &labels[i][j], w.WINDOW_STYLE{
                 .VISIBLE = 1,
                 .CHILD = 1,
                 .ACTIVECAPTION = 1, // .CENTER
             }, x, y, labelSize.x, labelSize.y, hwnd, null, hInstance, null);
+            _ = w.SendMessageW(newLabel, w.WM_SETFONT, @intCast(@intFromPtr(g_hFont)), 1);
         }
     }
 }

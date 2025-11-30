@@ -29,6 +29,7 @@ fn wndProc(
 ) callconv(.winapi) w.LRESULT {
     return switch (msg) {
         w.WM_DESTROY => {
+            m.destroy();
             w.PostQuitMessage(0);
             return 0;
         },
