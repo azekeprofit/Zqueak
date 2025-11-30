@@ -7,6 +7,31 @@ const Modes = enum {
     RowChosen,
     ColChosen,
 };
+
+var mode: Modes = Modes.Hidden;
+var rightMouse = false;
+pub var mainWindow: ?w.HWND = undefined;
+pub var hookHandle: ?w.HHOOK = undefined;
+pub fn keyHandler(nCode: i32, wParam: w.WPARAM, lParam: w.LPARAM) callconv(.c) w.LRESULT {
+    // Checks whether params contain action about keystroke
+    if (nCode == w.HC_ACTION) {
+        const vk = @as(w.VIRTUAL_KEY, @enumFromInt(@as(*w.KBDLLHOOKSTRUCT, @ptrFromInt(@as(usize, @intCast(lParam)))).vkCode));
+        if (vk == w.VIRTUAL_KEY.F13 and mode == Modes.Hidden) {
+            mode = Modes.Grid;
+            rightMouse = false;
+            _ = w.ShowWindow(mainWindow, w.SW_MAXIMIZE);
+            return 1;
+        }
+        if (vk == w.VIRTUAL_KEY.ESCAPE and mode != Modes.Hidden) {
+            mode = Modes.Hidden;
+            _ = w.ShowWindow(mainWindow, w.SW_HIDE);
+            return 1;
+        }
+    }
+
+    return w.CallNextHookEx(hookHandle, nCode, wParam, lParam);
+}
+
 pub fn letterToVK(s: c_char) w.VIRTUAL_KEY {
     return switch (s) {
         '-' => w.VK_RETURN,
@@ -62,7 +87,7 @@ pub fn drawLabels(hwnd: ?w.HWND) void {
         0,
         0,
         0,
-        w.FW_MEDIUM,
+        w.FW_DEMIBOLD,
         0,
         0,
         0,
@@ -81,6 +106,7 @@ pub fn drawLabels(hwnd: ?w.HWND) void {
             const newLabel = w.CreateWindowExW(w.WINDOW_EX_STYLE{}, w.L("STATIC"), &labels[i][j], w.WINDOW_STYLE{
                 .VISIBLE = 1,
                 .CHILD = 1,
+                .BORDER = 1,
                 .ACTIVECAPTION = 1, // .CENTER
             }, x, y, labelSize.x, labelSize.y, hwnd, null, hInstance, null);
             _ = w.SendMessageW(newLabel, w.WM_SETFONT, @intCast(@intFromPtr(g_hFont)), 1);
@@ -91,5 +117,3 @@ pub fn drawLabels(hwnd: ?w.HWND) void {
 pub const boardlineLen = 10;
 pub const boardHeight = 3;
 pub const boardChars = "qwfpbjluy;arstgkneiozxcdvmh,.-";
-
-//    private bool rightMouse = false;

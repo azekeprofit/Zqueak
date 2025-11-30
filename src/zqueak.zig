@@ -69,7 +69,7 @@ pub fn main() !void {
 
     if (w.RegisterClassW(&wc) == 0) return error.RegisterClassFailed;
 
-    const hwnd = w.CreateWindowExW(
+    m.mainWindow = w.CreateWindowExW(
         w.WINDOW_EX_STYLE{ .LAYERED = 1 },
         WINDOW_CLASS_NAME,
         w.L("Zqueak"),
@@ -92,11 +92,16 @@ pub fn main() !void {
         null,
     ) orelse return error.CreateWindowFailed;
 
-    _ = w.SetLayeredWindowAttributes(hwnd, transparent, 0, w.LWA_COLORKEY);
+    _ = w.SetLayeredWindowAttributes(m.mainWindow, transparent, 0, w.LWA_COLORKEY);
 
-    _ = w.SetWindowLongW(hwnd, w.GWL_STYLE, @bitCast(w.WS_POPUP));
+    _ = w.SetWindowLongW(m.mainWindow, w.GWL_STYLE, @bitCast(w.WS_POPUP));
 
-    _ = w.ShowWindow(hwnd, w.SW_SHOWMAXIMIZED);
+    // _ = w.ShowWindow(hwnd, w.SW_SHOWMAXIMIZED);
+
+    m.hookHandle = w.SetWindowsHookExW(w.WH_KEYBOARD_LL, m.keyHandler, hInstance, 0);
+    if (m.hookHandle == null) {
+        return;
+    }
 
     var msg: w.MSG = undefined;
     while (w.GetMessageW(&msg, null, 0, 0) > 0) {
