@@ -7,13 +7,17 @@
             "label": "zig build",
             "type": "shell",
             "command": "zig build -Doptimize=ReleaseSmall",
-            "problemMatcher": []
+            "problemMatcher": [
+                "$zig"
+            ],
         },
         {
             "label": "run",
             "type": "shell",
             "command": "zig build run",
-            "problemMatcher": []
+            "problemMatcher": [
+                "$zig"
+            ],
         }
     ]
 }

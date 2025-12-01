@@ -57,7 +57,6 @@ pub fn drawLabels(hwnd: ?w.HWND) void {
 const win32 = @import("win32");
 const w = win32.everything;
 const m = @import("machine.zig");
-const z = @import("zqueak.zig");
 
 pub var g_hFont: ?w.HFONT = undefined;
 pub const pos = struct {
