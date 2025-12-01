@@ -29,7 +29,7 @@ pub fn keyHandler(nCode: i32, wParam: w.WPARAM, lParam: w.LPARAM) callconv(.c) w
             if (mode == Modes.ColChosen and vk == w.VK_SPACE) {
                 _ = w.ShowWindow(mainWindow, w.SW_HIDE);
                 mode = Modes.Hidden;
-                if (rightMouse) rightClick(CellCenter()) else leftClick(CellCenter());
+                click(CellCenter());
                 break :blk 1;
             }
 
@@ -59,7 +59,7 @@ pub fn keyHandler(nCode: i32, wParam: w.WPARAM, lParam: w.LPARAM) callconv(.c) w
                     if (letterToVK(key) == vk) {
                         mode = Modes.Hidden;
                         _ = w.ShowWindow(mainWindow, w.SW_HIDE);
-                        if (rightMouse) rightClick(SubgridPos(boardPos)) else leftClick(SubgridPos(boardPos));
+                        click(SubgridPos(boardPos));
                         break :blk 1;
                     }
                 }
@@ -80,16 +80,10 @@ fn placeCursor(p: pos) void {
     _ = w.SetCursorPos(p.x, p.y);
 }
 
-fn leftClick(p: pos) void {
+fn click(p: pos) void {
     placeCursor(p);
-    w.mouse_event(w.MOUSEEVENTF_LEFTDOWN, p.x, p.y, 0, 0);
-    w.mouse_event(w.MOUSEEVENTF_LEFTUP, p.x, p.y, 0, 0);
-}
-
-fn rightClick(p: pos) void {
-    placeCursor(p);
-    w.mouse_event(w.MOUSEEVENTF_RIGHTDOWN, p.x, p.y, 0, 0);
-    w.mouse_event(w.MOUSEEVENTF_RIGHTUP, p.x, p.y, 0, 0);
+    w.mouse_event(if (rightMouse) w.MOUSEEVENTF_RIGHTDOWN else w.MOUSEEVENTF_LEFTDOWN, p.x, p.y, 0, 0);
+    w.mouse_event(if (rightMouse) w.MOUSEEVENTF_RIGHTUP else w.MOUSEEVENTF_LEFTUP, p.x, p.y, 0, 0);
 }
 
 fn CellLeftUpCorner() pos {
