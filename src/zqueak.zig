@@ -34,7 +34,7 @@ pub fn main() !void {
     const hInstance = w.GetModuleHandleW(null);
 
     const wc = w.WNDCLASSW{
-        .style = w.WNDCLASS_STYLES{ .VREDRAW = 1, .HREDRAW = 1 },
+        .style = .{ .VREDRAW = 1, .HREDRAW = 1 },
         .lpfnWndProc = wndProc,
         .hInstance = hInstance,
         .hCursor = w.LoadCursorW(null, w.IDC_CROSS),
@@ -49,10 +49,10 @@ pub fn main() !void {
     if (w.RegisterClassW(&wc) == 0) return error.RegisterClassFailed;
 
     m.mainWindow = w.CreateWindowExW(
-        w.WINDOW_EX_STYLE{ .LAYERED = 1, .TOPMOST = 1 },
+        .{ .LAYERED = 1, .TOPMOST = 1 },
         WINDOW_CLASS_NAME,
         w.L("Zqueak"),
-        w.WINDOW_STYLE{
+        .{
             .VISIBLE = 0,
             .TABSTOP = 0,
             .GROUP = 0,
@@ -97,10 +97,6 @@ const d = @import("drawLabels.zig");
 pub const transparent = packRgb(180, 80, 80);
 var tBrush: ?w.HBRUSH = undefined;
 const WINDOW_CLASS_NAME = w.L("ZigBlankWindow");
-
-extern "gdi32" fn CreateSolidBrush(
-    color: u32,
-) callconv(.winapi) w.LRESULT;
 
 pub fn packRgb(r: u8, g: u8, b: u8) u32 {
     return (@as(u32, b) << 16) |

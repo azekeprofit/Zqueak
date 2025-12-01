@@ -6,14 +6,14 @@ var label: [3:0]u16 = undefined;
 pub fn drawLabels(hwnd: ?w.HWND) void {
     const hInstance = w.GetModuleHandleW(null);
 
-    axisSize = pos{ .x = m.horizonthal.len, .y = m.vertical.len };
+    axisSize = .{ .x = m.horizonthal.len, .y = m.vertical.len };
     const monitor = w.MonitorFromWindow(hwnd, w.MONITOR_DEFAULTTONEAREST);
-    var info = w.MONITORINFO{ .cbSize = @sizeOf(w.MONITORINFO), .dwFlags = 0, .rcMonitor = w.RECT{ .left = 0, .bottom = 0, .right = 0, .top = 0 }, .rcWork = w.RECT{ .bottom = 0, .left = 0, .right = 0, .top = 0 } };
+    var info = w.MONITORINFO{ .cbSize = @sizeOf(w.MONITORINFO), .dwFlags = 0, .rcMonitor = .{ .left = 0, .bottom = 0, .right = 0, .top = 0 }, .rcWork = .{ .bottom = 0, .left = 0, .right = 0, .top = 0 } };
 
     _ = w.GetMonitorInfoW(monitor, &info);
 
-    screenSize = pos{ .x = info.rcMonitor.right - info.rcMonitor.left, .y = info.rcMonitor.bottom - info.rcMonitor.top };
-    labelSize = pos{ .x = @divTrunc(screenSize.x, axisSize.x), .y = @divTrunc(screenSize.y, axisSize.y) };
+    screenSize = .{ .x = info.rcMonitor.right - info.rcMonitor.left, .y = info.rcMonitor.bottom - info.rcMonitor.top };
+    labelSize = .{ .x = @divTrunc(screenSize.x, axisSize.x), .y = @divTrunc(screenSize.y, axisSize.y) };
 
     g_hFont = w.CreateFontW(
         20,
@@ -39,7 +39,7 @@ pub fn drawLabels(hwnd: ?w.HWND) void {
             label[0] = upper(m.vertical[j]);
             const x: i32 = @divTrunc((@as(i32, @intCast(i)) * screenSize.x), axisSize.x);
             const y: i32 = @divTrunc((@as(i32, @intCast(j)) * screenSize.y), axisSize.y);
-            const newLabel = w.CreateWindowExW(w.WINDOW_EX_STYLE{}, w.L("STATIC"), &label, w.WINDOW_STYLE{
+            const newLabel = w.CreateWindowExW(.{}, w.L("STATIC"), &label, .{
                 .VISIBLE = 1,
                 .CHILD = 1,
                 .BORDER = 1,
@@ -60,7 +60,7 @@ const m = @import("machine.zig");
 const z = @import("zqueak.zig");
 
 pub var g_hFont: ?w.HFONT = undefined;
-pub const pos = extern struct {
+pub const pos = struct {
     x: i32,
     y: i32,
 };

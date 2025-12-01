@@ -11,59 +11,59 @@ pub fn keyHandler(nCode: i32, wParam: w.WPARAM, lParam: w.LPARAM) callconv(.c) w
             const kbd: *w.KBDLLHOOKSTRUCT = @ptrFromInt(@as(usize, @intCast(lParam)));
             const vk: w.VIRTUAL_KEY = @enumFromInt(kbd.vkCode);
 
-            if (vk == w.VK_F13 and mode == Modes.Hidden) {
-                mode = Modes.Grid;
+            if (vk == w.VK_F13 and mode == .Hidden) {
+                mode = .Grid;
                 rightMouse = false;
                 _ = w.ShowWindow(mainWindow, w.SW_SHOWMAXIMIZED);
                 break :blk 1;
             }
 
-            if (vk == w.VK_F13 and mode == Modes.Grid) {
+            if (vk == w.VK_F13 and mode == .Grid) {
                 w.PostQuitMessage(0);
                 break :blk 1;
             }
 
-            if (vk == w.VK_ESCAPE and mode != Modes.Hidden) {
-                mode = Modes.Hidden;
+            if (vk == w.VK_ESCAPE and mode != .Hidden) {
+                mode = .Hidden;
                 _ = w.ShowWindow(mainWindow, w.SW_HIDE);
                 break :blk 1;
             }
-            if (vk == w.VK_TAB and mode != Modes.Hidden) {
+            if (vk == w.VK_TAB and mode != .Hidden) {
                 rightMouse = !rightMouse;
                 break :blk 1;
             }
-            if (mode == Modes.ColChosen and vk == w.VK_SPACE) {
+            if (mode == .ColChosen and vk == w.VK_SPACE) {
                 _ = w.ShowWindow(mainWindow, w.SW_HIDE);
-                mode = Modes.Hidden;
+                mode = .Hidden;
                 click(CellCenter());
                 break :blk 1;
             }
 
-            if (mode == Modes.Grid) {
+            if (mode == .Grid) {
                 for (vertical, 0..) |first, i| {
                     if (letterToVK(first) == vk) {
                         rightMouse = false;
-                        mode = Modes.RowChosen;
+                        mode = .RowChosen;
                         cursor.y = @intCast(i);
                         break :blk 1;
                     }
                 }
             }
 
-            if (mode == Modes.RowChosen) {
+            if (mode == .RowChosen) {
                 for (horizonthal, 0..) |second, j| {
                     if (letterToVK(second) == vk) {
-                        mode = Modes.ColChosen;
+                        mode = .ColChosen;
                         cursor.x = @intCast(j);
                         placeCursor(CellCenter());
                         break :blk 1;
                     }
                 }
             }
-            if (mode == Modes.ColChosen) {
+            if (mode == .ColChosen) {
                 for (board, 0..) |key, boardPos| {
                     if (letterToVK(key) == vk) {
-                        mode = Modes.Hidden;
+                        mode = .Hidden;
                         _ = w.ShowWindow(mainWindow, w.SW_HIDE);
                         click(SubgridPos(boardPos));
                         break :blk 1;
@@ -86,7 +86,7 @@ fn click(p: pos) void {
 }
 
 fn CellLeftUpCorner() pos {
-    return pos{
+    return .{
         .x = @divTrunc(cursor.x * d.screenSize.x, d.axisSize.x),
         .y = @divTrunc(cursor.y * d.screenSize.y, d.axisSize.y),
     };
@@ -122,7 +122,7 @@ const Modes = enum {
     ColChosen,
 };
 
-var mode: Modes = Modes.Hidden;
+var mode: Modes = .Hidden;
 var rightMouse = false;
 
 pub var mainWindow: ?w.HWND = undefined;
@@ -134,6 +134,7 @@ pub fn letterToVK(s: u8) w.VIRTUAL_KEY {
         ';' => w.VK_OEM_1,
         ',' => w.VK_OEM_COMMA,
         '.' => w.VK_OEM_PERIOD,
+
         'a' => w.VK_A,
         'b' => w.VK_B,
         'c' => w.VK_C,
@@ -160,33 +161,6 @@ pub fn letterToVK(s: u8) w.VIRTUAL_KEY {
         'x' => w.VK_X,
         'y' => w.VK_Y,
         'z' => w.VK_Z,
-
-        'A' => w.VK_A, // Note: uppercase letters also map to the same VK codes
-        'B' => w.VK_B, // (Windows VK codes are not case-sensitive)
-        'C' => w.VK_C,
-        'D' => w.VK_D,
-        'E' => w.VK_E,
-        'F' => w.VK_F,
-        'G' => w.VK_G,
-        'H' => w.VK_H,
-        'I' => w.VK_I,
-        'J' => w.VK_J,
-        'K' => w.VK_K,
-        'L' => w.VK_L,
-        'M' => w.VK_M,
-        'N' => w.VK_N,
-        'O' => w.VK_O,
-        'P' => w.VK_P,
-        'Q' => w.VK_Q,
-        'R' => w.VK_R,
-        'S' => w.VK_S,
-        'T' => w.VK_T,
-        'U' => w.VK_U,
-        'V' => w.VK_V,
-        'W' => w.VK_W,
-        'X' => w.VK_X,
-        'Y' => w.VK_Y,
-        'Z' => w.VK_Z,
         else => @enumFromInt(s),
     };
 }
