@@ -1,23 +1,4 @@
-const std = @import("std");
-const win32 = @import("win32");
-const w = win32.everything;
-const m = @import("machine.zig");
-
-extern "gdi32" fn SetBkColor(
-    hdc: w.WPARAM,
-    color: u32,
-) callconv(.winapi) u32;
-
-extern "gdi32" fn CreateSolidBrush(
-    color: u32,
-) callconv(.winapi) w.LRESULT;
-
-fn packRgb(r: u8, g: u8, b: u8) u32 {
-    return (@as(u32, b) << 16) |
-        (@as(u32, g) << 8) |
-        (@as(u32, r));
-}
-const transparent = packRgb(0, 50, 0);
+pub const transparent = packRgb(180, 80, 80);
 var tBrush: ?w.HBRUSH = undefined;
 const WINDOW_CLASS_NAME = w.L("ZigBlankWindow");
 
@@ -29,20 +10,22 @@ fn wndProc(
 ) callconv(.winapi) w.LRESULT {
     return switch (msg) {
         w.WM_DESTROY => {
-            m.destroy();
+            if (d.g_hFont) |h| _ = w.DeleteObject(h);
+            if (m.hookHandle) |h| _ = w.UnhookWindowsHookEx(h);
+
             w.PostQuitMessage(0);
             return 0;
         },
-        w.WM_CTLCOLORSTATIC => {
-            if (w.IsWindow(hwnd) != 0) {
-                _ = w.SetBkColor(@ptrFromInt(wParam), transparent);
-                return @intCast(@intFromPtr(w.GetStockObject(w.NULL_BRUSH)));
-            }
-            return 0;
-        },
+        // w.WM_CTLCOLORSTATIC => {
+        //     if (w.IsWindow(hwnd) != 0) {
+        //         _ = w.SetBkColor(@ptrFromInt(wParam), transparent);
+        //         return @intCast(@intFromPtr(w.GetStockObject(w.NULL_BRUSH)));
+        //     }
+        //     return 0;
+        // },
         w.WM_MOUSEACTIVATE => w.MA_NOACTIVATE,
         w.WM_CREATE => {
-            m.drawLabels(hwnd);
+            d.drawLabels(hwnd);
             return 0;
         },
         else => w.DefWindowProcW(hwnd, msg, wParam, lParam),
@@ -92,7 +75,7 @@ pub fn main() !void {
         null,
     ) orelse @panic("Couldn't create window");
 
-    _ = w.SetLayeredWindowAttributes(m.mainWindow, transparent, 0, w.LWA_COLORKEY);
+    _ = w.SetLayeredWindowAttributes(m.mainWindow, 0, 20, w.LWA_ALPHA);
     _ = w.SetWindowLongW(m.mainWindow, w.GWL_STYLE, @bitCast(w.WS_POPUP));
 
     // _ = w.ShowWindow(hwnd, w.SW_SHOWMAXIMIZED);
@@ -107,4 +90,20 @@ pub fn main() !void {
         _ = w.TranslateMessage(&msg);
         _ = w.DispatchMessageW(&msg);
     }
+}
+
+const std = @import("std");
+const win32 = @import("win32");
+const w = win32.everything;
+const m = @import("machine.zig");
+const d = @import("drawLabels.zig");
+
+extern "gdi32" fn CreateSolidBrush(
+    color: u32,
+) callconv(.winapi) w.LRESULT;
+
+pub fn packRgb(r: u8, g: u8, b: u8) u32 {
+    return (@as(u32, b) << 16) |
+        (@as(u32, g) << 8) |
+        (@as(u32, r));
 }
