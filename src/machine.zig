@@ -1,18 +1,3 @@
-const win32 = @import("win32");
-const w = win32.everything;
-
-const Modes = enum {
-    Hidden,
-    Grid,
-    RowChosen,
-    ColChosen,
-};
-
-var mode: Modes = Modes.Hidden;
-var rightMouse = false;
-pub var mainWindow: ?w.HWND = undefined;
-pub var hookHandle: ?w.HHOOK = undefined;
-pub var lastKey: ?w.VIRTUAL_KEY = undefined;
 pub fn keyHandler(nCode: i32, wParam: w.WPARAM, lParam: w.LPARAM) callconv(.c) w.LRESULT {
     return blk: {
         if (nCode == w.HC_ACTION and wParam == w.WM_KEYDOWN) {
@@ -42,7 +27,7 @@ pub fn keyHandler(nCode: i32, wParam: w.WPARAM, lParam: w.LPARAM) callconv(.c) w
                 break :blk 1;
             }
 
-            if (mode == Modes.Grid or mode == Modes.ColChosen) {
+            if (mode == Modes.Grid) {
                 for (vertical, 0..) |first, i| {
                     if (letterToVK(first) == vk) {
                         rightMouse = false;
@@ -63,10 +48,154 @@ pub fn keyHandler(nCode: i32, wParam: w.WPARAM, lParam: w.LPARAM) callconv(.c) w
                     }
                 }
             }
+            if (mode == Modes.ColChosen) {
+                for (board, 0..) |key, boardPos| {
+                    if (letterToVK(key) == vk) {
+                        mode = Modes.Hidden;
+                        _ = w.ShowWindow(mainWindow, w.SW_HIDE);
+                        if (rightMouse) rightClick(SubgridPos(boardPos)) else leftClick(SubgridPos(boardPos));
+                        break :blk 1;
+                    }
+                }
+            }
         }
         break :blk w.CallNextHookEx(hookHandle, nCode, wParam, lParam);
     };
 }
+
+pub const horizonthal = "qwfpbarstgzxcdvjluykneiomh"; // "qwfpbarstgzxcdv";
+pub const vertical = "qwfpbarstgzxcdvjluykneiomh"; //"jluy;kneiom,.-";
+
+pub const labels = init: {
+    var result: [vertical.len][horizonthal.len][3:0]u16 = undefined;
+    for (vertical, 0..) |first, j| {
+        for (horizonthal, 0..) |second, i| {
+            result[i][j] = .{ @intCast(first + 'A' - 'a'), @intCast(' '), @intCast(second + 'A' - 'a') };
+        }
+    }
+    break :init result;
+};
+
+pub const boardlineLen = 10;
+pub const boardHeight = 3;
+pub const board = "qwfpbjluy;arstgkneiozxcdvmh,.-";
+
+fn placeCursor(p: pos) void {
+    _ = w.SetCursorPos(p.x, p.y);
+}
+
+fn leftClick(p: pos) void {
+    placeCursor(p);
+    w.mouse_event(w.MOUSEEVENTF_LEFTDOWN, p.x, p.y, 0, 0);
+    w.mouse_event(w.MOUSEEVENTF_LEFTUP, p.x, p.y, 0, 0);
+}
+
+fn rightClick(p: pos) void {
+    placeCursor(p);
+    w.mouse_event(w.MOUSEEVENTF_RIGHTDOWN, p.x, p.y, 0, 0);
+    w.mouse_event(w.MOUSEEVENTF_RIGHTUP, p.x, p.y, 0, 0);
+}
+
+fn CellLeftUpCorner() pos {
+    return pos{
+        .x = @divTrunc(cursor.x * screenSize.x, axisSize.x),
+        .y = @divTrunc(cursor.y * screenSize.y, axisSize.y),
+    };
+}
+
+fn CellCenter() pos {
+    var p = CellLeftUpCorner();
+    p.x += @divTrunc(labelSize.x, 2);
+    p.y += @divTrunc(labelSize.y, 2);
+    return p;
+}
+
+fn SubgridPos(boardPos: usize) pos {
+    const subRow = boardPos / boardlineLen;
+    const subCol = boardPos % boardlineLen;
+
+    var p = CellLeftUpCorner();
+
+    p.x += @divTrunc((@as(i32, @intCast(subCol)) * labelSize.x), boardlineLen);
+    p.y += @divTrunc((@as(i32, @intCast(subRow)) * labelSize.y), boardHeight);
+    return p;
+}
+
+pub var axisSize = pos{ .x = 0, .y = 0 };
+pub var labelSize = pos{ .x = 0, .y = 0 };
+pub var screenSize = pos{ .x = 0, .y = 0 };
+pub var cursor = pos{ .x = 0, .y = 0 };
+
+pub fn destroy() void {
+    if (g_hFont) |h| _ = w.DeleteObject(h);
+    if (hookHandle) |h| _ = w.UnhookWindowsHookEx(h);
+}
+
+pub fn drawLabels(hwnd: ?w.HWND) void {
+    const hInstance = w.GetModuleHandleW(null);
+
+    axisSize = pos{ .x = horizonthal.len, .y = vertical.len };
+    const monitor = w.MonitorFromWindow(hwnd, w.MONITOR_DEFAULTTONEAREST);
+    var info = w.MONITORINFO{ .cbSize = @sizeOf(w.MONITORINFO), .dwFlags = 0, .rcMonitor = w.RECT{ .left = 0, .bottom = 0, .right = 0, .top = 0 }, .rcWork = w.RECT{ .bottom = 0, .left = 0, .right = 0, .top = 0 } };
+
+    _ = w.GetMonitorInfoW(monitor, &info);
+
+    screenSize = pos{ .x = info.rcMonitor.right - info.rcMonitor.left, .y = info.rcMonitor.bottom - info.rcMonitor.top };
+    labelSize = pos{ .x = @divTrunc(screenSize.x, axisSize.x), .y = @divTrunc(screenSize.y, axisSize.y) };
+
+    g_hFont = w.CreateFontW(
+        20,
+        0,
+        0,
+        0,
+        w.FW_DEMIBOLD,
+        0,
+        0,
+        0,
+        w.DEFAULT_CHARSET,
+        w.OUT_DEFAULT_PRECIS,
+        w.CLIP_DEFAULT_PRECIS,
+        w.CLEARTYPE_QUALITY,
+        w.FF_DONTCARE,
+        w.L("Segoe UI"),
+    );
+
+    for (0..horizonthal.len) |i| {
+        for (0..vertical.len) |j| {
+            const x: i32 = @divTrunc((@as(i32, @intCast(i)) * screenSize.x), axisSize.x);
+            const y: i32 = @divTrunc((@as(i32, @intCast(j)) * screenSize.y), axisSize.y);
+            const newLabel = w.CreateWindowExW(w.WINDOW_EX_STYLE{}, w.L("STATIC"), &labels[i][j], w.WINDOW_STYLE{
+                .VISIBLE = 1,
+                .CHILD = 1,
+                .BORDER = 1,
+                .ACTIVECAPTION = 1, // .CENTER
+            }, x, y, labelSize.x, labelSize.y, hwnd, null, hInstance, null);
+            _ = w.SendMessageW(newLabel, w.WM_SETFONT, @intCast(@intFromPtr(g_hFont)), 1);
+        }
+    }
+}
+
+const win32 = @import("win32");
+const w = win32.everything;
+
+const Modes = enum {
+    Hidden,
+    Grid,
+    RowChosen,
+    ColChosen,
+};
+
+pub const pos = extern struct {
+    x: i32,
+    y: i32,
+};
+
+var mode: Modes = Modes.Hidden;
+var rightMouse = false;
+
+pub var mainWindow: ?w.HWND = undefined;
+pub var hookHandle: ?w.HHOOK = undefined;
+var g_hFont: ?w.HFONT = undefined;
 
 pub fn letterToVK(s: u8) w.VIRTUAL_KEY {
     return switch (s) {
@@ -130,122 +259,3 @@ pub fn letterToVK(s: u8) w.VIRTUAL_KEY {
         else => @enumFromInt(s),
     };
 }
-
-pub const horizonthal = "qwfpbarstgzxcdvjluykneiomh"; // "qwfpbarstgzxcdv";
-pub const vertical = "qwfpbarstgzxcdvjluykneiomh"; //"jluy;kneiom,.-";
-
-pub const labels = init: {
-    var result: [vertical.len][horizonthal.len][3:0]u16 = undefined;
-    for (vertical, 0..) |first, j| {
-        for (horizonthal, 0..) |second, i| {
-            result[i][j] = .{ @intCast(first + 'A' - 'a'), @intCast(' '), @intCast(second + 'A' - 'a') };
-        }
-    }
-    break :init result;
-};
-
-pub const pos = extern struct {
-    x: i32,
-    y: i32,
-};
-
-fn placeCursor(p: pos) void {
-    _ = w.SetCursorPos(p.x, p.y);
-}
-
-fn leftClick(p: pos) void {
-    placeCursor(p);
-    w.mouse_event(w.MOUSEEVENTF_LEFTDOWN, p.x, p.y, 0, 0);
-    w.mouse_event(w.MOUSEEVENTF_LEFTUP, p.x, p.y, 0, 0);
-}
-
-fn rightClick(p: pos) void {
-    placeCursor(p);
-    w.mouse_event(w.MOUSEEVENTF_RIGHTDOWN, p.x, p.y, 0, 0);
-    w.mouse_event(w.MOUSEEVENTF_RIGHTUP, p.x, p.y, 0, 0);
-}
-
-fn CellLeftUpCorner() pos {
-    return pos{
-        .x = @divTrunc(cursor.x * screenSize.x, axisSize.x),
-        .y = @divTrunc(cursor.y * screenSize.y, axisSize.y),
-    };
-}
-
-fn CellCenter() pos {
-    var p = CellLeftUpCorner();
-    p.x += @divTrunc(labelSize.x, 2);
-    p.y += @divTrunc(labelSize.y, 2);
-    return p;
-}
-
-fn SubgridPos(boardPos: usize) pos {
-    const subRow = boardPos / boardlineLen;
-    const subCol = boardPos % boardlineLen;
-
-    const p = CellLeftUpCorner();
-
-    p.x += @divTrunc((@as(i32, @intCast(subCol)) * labelSize.x), boardlineLen);
-    p.y += @divTrunc((@as(i32, @intCast(subRow)) * labelSize.y), boardHeight);
-    return pos;
-}
-
-pub var axisSize = pos{ .x = 0, .y = 0 };
-pub var labelSize = pos{ .x = 0, .y = 0 };
-pub var screenSize = pos{ .x = 0, .y = 0 };
-pub var cursor = pos{ .x = 0, .y = 0 };
-
-var g_hFont: ?w.HFONT = undefined;
-
-pub fn destroy() void {
-    if (g_hFont) |h| _ = w.DeleteObject(h);
-    if (hookHandle) |h| _ = w.UnhookWindowsHookEx(h);
-}
-
-pub fn drawLabels(hwnd: ?w.HWND) void {
-    const hInstance = w.GetModuleHandleW(null);
-
-    axisSize = pos{ .x = horizonthal.len, .y = vertical.len };
-    const monitor = w.MonitorFromWindow(hwnd, w.MONITOR_DEFAULTTONEAREST);
-    var info = w.MONITORINFO{ .cbSize = @sizeOf(w.MONITORINFO), .dwFlags = 0, .rcMonitor = w.RECT{ .left = 0, .bottom = 0, .right = 0, .top = 0 }, .rcWork = w.RECT{ .bottom = 0, .left = 0, .right = 0, .top = 0 } };
-
-    _ = w.GetMonitorInfoW(monitor, &info);
-
-    screenSize = pos{ .x = info.rcMonitor.right - info.rcMonitor.left, .y = info.rcMonitor.bottom - info.rcMonitor.top };
-    labelSize = pos{ .x = @divTrunc(screenSize.x, axisSize.x), .y = @divTrunc(screenSize.y, axisSize.y) };
-
-    g_hFont = w.CreateFontW(
-        20,
-        0,
-        0,
-        0,
-        w.FW_DEMIBOLD,
-        0,
-        0,
-        0,
-        w.DEFAULT_CHARSET,
-        w.OUT_DEFAULT_PRECIS,
-        w.CLIP_DEFAULT_PRECIS,
-        w.CLEARTYPE_QUALITY,
-        w.FF_DONTCARE,
-        w.L("Segoe UI"),
-    );
-
-    for (0..horizonthal.len) |i| {
-        for (0..vertical.len) |j| {
-            const x: i32 = @divTrunc((@as(i32, @intCast(i)) * screenSize.x), axisSize.x);
-            const y: i32 = @divTrunc((@as(i32, @intCast(j)) * screenSize.y), axisSize.y);
-            const newLabel = w.CreateWindowExW(w.WINDOW_EX_STYLE{}, w.L("STATIC"), &labels[i][j], w.WINDOW_STYLE{
-                .VISIBLE = 1,
-                .CHILD = 1,
-                .BORDER = 1,
-                .ACTIVECAPTION = 1, // .CENTER
-            }, x, y, labelSize.x, labelSize.y, hwnd, null, hInstance, null);
-            _ = w.SendMessageW(newLabel, w.WM_SETFONT, @intCast(@intFromPtr(g_hFont)), 1);
-        }
-    }
-}
-
-pub const boardlineLen = 10;
-pub const boardHeight = 3;
-pub const boardChars = "qwfpbjluy;arstgkneiozxcdvmh,.-";
