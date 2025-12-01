@@ -34,9 +34,9 @@ pub fn drawLabels(hwnd: ?w.HWND) void {
 
     label[1] = @intCast(' ');
     for (0..m.horizonthal.len) |i| {
-        label[2] = upper(m.horizonthal[i]);
+        label[2] = m.horizonthal[i];
         for (0..m.vertical.len) |j| {
-            label[0] = upper(m.vertical[j]);
+            label[0] = m.vertical[j];
             const x: i32 = @divTrunc((@as(i32, @intCast(i)) * screenSize.x), axisSize.x);
             const y: i32 = @divTrunc((@as(i32, @intCast(j)) * screenSize.y), axisSize.y);
             const newLabel = w.CreateWindowExW(.{}, w.L("STATIC"), &label, .{
@@ -63,10 +63,3 @@ pub const pos = struct {
     x: i32,
     y: i32,
 };
-
-fn upper(char: u8) u16 {
-    return switch (char) {
-        'a'...'z' => @as(u16, @intCast(char + 'A' - 'a')),
-        else => @intCast(char),
-    };
-}

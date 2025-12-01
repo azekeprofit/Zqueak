@@ -1,9 +1,9 @@
-pub const horizonthal = "abcdefghijklmnopqrstuvwxyz"; // "qwfpbarstgzxcdv";
-pub const vertical = "abcdefghijklmnopqrstuvwxyz"; //"jluy;kneiom,.-";
+pub const horizonthal = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"; // "QWFPBARSTGZXCDV";
+pub const vertical = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"; //"JLUY;KNEIOM,.-"
 
 pub const boardlineLen = 10;
 pub const boardHeight = 3;
-pub const board = "qwfpbjluy;arstgkneiozxcdvmh,.-";
+pub const board = "QWFPBJLUY;ARSTGKNEIOZXCDVMH,.-";
 
 pub fn keyHandler(nCode: i32, wParam: w.WPARAM, lParam: w.LPARAM) callconv(.c) w.LRESULT {
     return blk: {
@@ -145,7 +145,6 @@ pub fn letterToVK(s: u8) w.VIRTUAL_KEY {
         ',' => w.VK_OEM_COMMA,
         '.' => w.VK_OEM_PERIOD,
 
-        'a'...'z' => @enumFromInt(s + 'A' - 'a'),
         else => @enumFromInt(s),
     };
 }
