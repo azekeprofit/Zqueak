@@ -12,33 +12,123 @@ var mode: Modes = Modes.Hidden;
 var rightMouse = false;
 pub var mainWindow: ?w.HWND = undefined;
 pub var hookHandle: ?w.HHOOK = undefined;
+pub var lastKey: ?w.VIRTUAL_KEY = undefined;
 pub fn keyHandler(nCode: i32, wParam: w.WPARAM, lParam: w.LPARAM) callconv(.c) w.LRESULT {
-    // Checks whether params contain action about keystroke
-    if (nCode == w.HC_ACTION) {
-        const vk = @as(w.VIRTUAL_KEY, @enumFromInt(@as(*w.KBDLLHOOKSTRUCT, @ptrFromInt(@as(usize, @intCast(lParam)))).vkCode));
-        if (vk == w.VIRTUAL_KEY.F13 and mode == Modes.Hidden) {
-            mode = Modes.Grid;
-            rightMouse = false;
-            _ = w.ShowWindow(mainWindow, w.SW_SHOWMAXIMIZED);
-            return 1;
-        }
-        if (vk == w.VIRTUAL_KEY.ESCAPE and mode != Modes.Hidden) {
-            mode = Modes.Hidden;
-            _ = w.ShowWindow(mainWindow, w.SW_HIDE);
-            return 1;
-        }
-    }
+    return blk: {
+        if (nCode == w.HC_ACTION and wParam == w.WM_KEYDOWN) {
+            const kbd: *w.KBDLLHOOKSTRUCT = @ptrFromInt(@as(usize, @intCast(lParam)));
+            const vk: w.VIRTUAL_KEY = @enumFromInt(kbd.vkCode);
 
-    return w.CallNextHookEx(hookHandle, nCode, wParam, lParam);
+            if (vk == w.VK_F13 and mode == Modes.Hidden) {
+                mode = Modes.Grid;
+                rightMouse = false;
+                _ = w.ShowWindow(mainWindow, w.SW_SHOWMAXIMIZED);
+                break :blk 1;
+            }
+
+            if (vk == w.VK_ESCAPE and mode != Modes.Hidden) {
+                mode = Modes.Hidden;
+                _ = w.ShowWindow(mainWindow, w.SW_HIDE);
+                break :blk 1;
+            }
+            if (vk == w.VK_TAB and mode != Modes.Hidden) {
+                rightMouse = !rightMouse;
+                break :blk 1;
+            }
+            if (mode == Modes.ColChosen and vk == w.VK_SPACE) {
+                _ = w.ShowWindow(mainWindow, w.SW_HIDE);
+                mode = Modes.Hidden;
+                if (rightMouse) rightClick(CellCenter());
+                leftClick(CellCenter());
+                break :blk 1;
+            }
+
+            if (mode == Modes.Grid or mode == Modes.ColChosen) {
+                for (vertical, 0..) |first, i| {
+                    if (letterToVK(first) == vk) {
+                        rightMouse = false;
+                        mode = Modes.RowChosen;
+                        cursor.y = @intCast(i);
+                        break :blk 1;
+                    }
+                }
+            }
+
+            if (mode == Modes.RowChosen) {
+                for (horizonthal, 0..) |second, j| {
+                    if (letterToVK(second) == vk) {
+                        mode = Modes.ColChosen;
+                        cursor.x = @intCast(j);
+                        placeCursor(CellCenter());
+                        break :blk 1;
+                    }
+                }
+            }
+        }
+        break :blk w.CallNextHookEx(hookHandle, nCode, wParam, lParam);
+    };
 }
 
-pub fn letterToVK(s: c_char) w.VIRTUAL_KEY {
+pub fn letterToVK(s: u8) w.VIRTUAL_KEY {
     return switch (s) {
         '-' => w.VK_RETURN,
-        ';' => w.VK_SEMICOLON,
+        ';' => w.VK_OEM_1,
         ',' => w.VK_OEM_COMMA,
         '.' => w.VK_OEM_PERIOD,
-        _ => s - 'a' + w.VK_A,
+        'a' => w.VK_A,
+        'b' => w.VK_B,
+        'c' => w.VK_C,
+        'd' => w.VK_D,
+        'e' => w.VK_E,
+        'f' => w.VK_F,
+        'g' => w.VK_G,
+        'h' => w.VK_H,
+        'i' => w.VK_I,
+        'j' => w.VK_J,
+        'k' => w.VK_K,
+        'l' => w.VK_L,
+        'm' => w.VK_M,
+        'n' => w.VK_N,
+        'o' => w.VK_O,
+        'p' => w.VK_P,
+        'q' => w.VK_Q,
+        'r' => w.VK_R,
+        's' => w.VK_S,
+        't' => w.VK_T,
+        'u' => w.VK_U,
+        'v' => w.VK_V,
+        'w' => w.VK_W,
+        'x' => w.VK_X,
+        'y' => w.VK_Y,
+        'z' => w.VK_Z,
+
+        'A' => w.VK_A, // Note: uppercase letters also map to the same VK codes
+        'B' => w.VK_B, // (Windows VK codes are not case-sensitive)
+        'C' => w.VK_C,
+        'D' => w.VK_D,
+        'E' => w.VK_E,
+        'F' => w.VK_F,
+        'G' => w.VK_G,
+        'H' => w.VK_H,
+        'I' => w.VK_I,
+        'J' => w.VK_J,
+        'K' => w.VK_K,
+        'L' => w.VK_L,
+        'M' => w.VK_M,
+        'N' => w.VK_N,
+        'O' => w.VK_O,
+        'P' => w.VK_P,
+        'Q' => w.VK_Q,
+        'R' => w.VK_R,
+        'S' => w.VK_S,
+        'T' => w.VK_T,
+        'U' => w.VK_U,
+        'V' => w.VK_V,
+        'W' => w.VK_W,
+        'X' => w.VK_X,
+        'Y' => w.VK_Y,
+        'Z' => w.VK_Z,
+        else => @enumFromInt(s),
     };
 }
 
@@ -47,8 +137,8 @@ pub const vertical = "qwfpbarstgzxcdvjluykneiomh"; //"jluy;kneiom,.-";
 
 pub const labels = init: {
     var result: [vertical.len][horizonthal.len][3:0]u16 = undefined;
-    for (vertical, 0..) |first, i| {
-        for (horizonthal, 0..) |second, j| {
+    for (vertical, 0..) |first, j| {
+        for (horizonthal, 0..) |second, i| {
             result[i][j] = .{ @intCast(first + 'A' - 'a'), @intCast(' '), @intCast(second + 'A' - 'a') };
         }
     }
@@ -60,9 +150,51 @@ pub const pos = extern struct {
     y: i32,
 };
 
+fn placeCursor(p: pos) void {
+    _ = w.SetCursorPos(p.x, p.y);
+}
+
+fn leftClick(p: pos) void {
+    placeCursor(p);
+    w.mouse_event(w.MOUSEEVENTF_LEFTDOWN, p.x, p.y, 0, 0);
+    w.mouse_event(w.MOUSEEVENTF_LEFTUP, p.x, p.y, 0, 0);
+}
+
+fn rightClick(p: pos) void {
+    placeCursor(p);
+    w.mouse_event(w.MOUSEEVENTF_RIGHTDOWN, p.x, p.y, 0, 0);
+    w.mouse_event(w.MOUSEEVENTF_RIGHTUP, p.x, p.y, 0, 0);
+}
+
+fn CellLeftUpCorner() pos {
+    return pos{
+        .x = @divTrunc(cursor.x * screenSize.x, axisSize.x),
+        .y = @divTrunc(cursor.y * screenSize.y, axisSize.y),
+    };
+}
+
+fn CellCenter() pos {
+    var p = CellLeftUpCorner();
+    p.x += @divTrunc(labelSize.x, 2);
+    p.y += @divTrunc(labelSize.y, 2);
+    return p;
+}
+
+fn SubgridPos(boardPos: usize) pos {
+    const subRow = boardPos / boardlineLen;
+    const subCol = boardPos % boardlineLen;
+
+    const p = CellLeftUpCorner();
+
+    p.x += @divTrunc((@as(i32, @intCast(subCol)) * labelSize.x), boardlineLen);
+    p.y += @divTrunc((@as(i32, @intCast(subRow)) * labelSize.y), boardHeight);
+    return pos;
+}
+
 pub var axisSize = pos{ .x = 0, .y = 0 };
 pub var labelSize = pos{ .x = 0, .y = 0 };
 pub var screenSize = pos{ .x = 0, .y = 0 };
+pub var cursor = pos{ .x = 0, .y = 0 };
 
 var g_hFont: ?w.HFONT = undefined;
 
