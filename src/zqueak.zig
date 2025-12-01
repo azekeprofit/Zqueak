@@ -90,7 +90,7 @@ pub fn main() !void {
         null,
         hInstance,
         null,
-    ) orelse return error.CreateWindowFailed;
+    ) orelse @panic("Couldn't create window");
 
     _ = w.SetLayeredWindowAttributes(m.mainWindow, transparent, 0, w.LWA_COLORKEY);
     _ = w.SetWindowLongW(m.mainWindow, w.GWL_STYLE, @bitCast(w.WS_POPUP));

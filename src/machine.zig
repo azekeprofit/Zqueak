@@ -11,6 +11,12 @@ pub fn keyHandler(nCode: i32, wParam: w.WPARAM, lParam: w.LPARAM) callconv(.c) w
                 break :blk 1;
             }
 
+            if (vk == w.VK_F13 and mode == Modes.Grid) {
+                destroy();
+                w.PostQuitMessage(0);
+                break :blk 1;
+            }
+
             if (vk == w.VK_ESCAPE and mode != Modes.Hidden) {
                 mode = Modes.Hidden;
                 _ = w.ShowWindow(mainWindow, w.SW_HIDE);
@@ -66,16 +72,6 @@ pub fn keyHandler(nCode: i32, wParam: w.WPARAM, lParam: w.LPARAM) callconv(.c) w
 pub const horizonthal = "qwfpbarstgzxcdvjluykneiomh"; // "qwfpbarstgzxcdv";
 pub const vertical = "qwfpbarstgzxcdvjluykneiomh"; //"jluy;kneiom,.-";
 
-pub const labels = init: {
-    var result: [vertical.len][horizonthal.len][3:0]u16 = undefined;
-    for (vertical, 0..) |first, j| {
-        for (horizonthal, 0..) |second, i| {
-            result[i][j] = .{ @intCast(first + 'A' - 'a'), @intCast(' '), @intCast(second + 'A' - 'a') };
-        }
-    }
-    break :init result;
-};
-
 pub const boardlineLen = 10;
 pub const boardHeight = 3;
 pub const board = "qwfpbjluy;arstgkneiozxcdvmh,.-";
@@ -126,6 +122,14 @@ pub var labelSize = pos{ .x = 0, .y = 0 };
 pub var screenSize = pos{ .x = 0, .y = 0 };
 pub var cursor = pos{ .x = 0, .y = 0 };
 
+var label: [3:0]u16 = undefined;
+
+fn upper(char: u8) u16 {
+    return switch (char) {
+        'a'...'z' => @as(u16, @intCast(char + 'A' - 'a')),
+        else => @intCast(char),
+    };
+}
 pub fn destroy() void {
     if (g_hFont) |h| _ = w.DeleteObject(h);
     if (hookHandle) |h| _ = w.UnhookWindowsHookEx(h);
@@ -160,11 +164,14 @@ pub fn drawLabels(hwnd: ?w.HWND) void {
         w.L("Segoe UI"),
     );
 
+    label[1] = @intCast(' ');
     for (0..horizonthal.len) |i| {
+        label[2] = upper(horizonthal[i]);
         for (0..vertical.len) |j| {
+            label[0] = upper(vertical[j]);
             const x: i32 = @divTrunc((@as(i32, @intCast(i)) * screenSize.x), axisSize.x);
             const y: i32 = @divTrunc((@as(i32, @intCast(j)) * screenSize.y), axisSize.y);
-            const newLabel = w.CreateWindowExW(w.WINDOW_EX_STYLE{}, w.L("STATIC"), &labels[i][j], w.WINDOW_STYLE{
+            const newLabel = w.CreateWindowExW(w.WINDOW_EX_STYLE{}, w.L("STATIC"), &label, w.WINDOW_STYLE{
                 .VISIBLE = 1,
                 .CHILD = 1,
                 .BORDER = 1,
