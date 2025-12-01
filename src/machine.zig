@@ -23,9 +23,14 @@ pub fn keyHandler(nCode: i32, wParam: w.WPARAM, lParam: w.LPARAM) callconv(.c) w
                 break :blk 1;
             }
 
+            if (vk == w.VK_SPACE and mode == .Grid) {
+                mode = .ColChosen;
+                placeCursor(lastPos);
+                break :blk 1;
+            }
+
             if (vk == w.VK_ESCAPE and mode != .Hidden) {
-                mode = .Hidden;
-                _ = w.ShowWindow(mainWindow, w.SW_HIDE);
+                hide();
                 break :blk 1;
             }
             if (vk == w.VK_TAB and mode != .Hidden) {
@@ -33,8 +38,7 @@ pub fn keyHandler(nCode: i32, wParam: w.WPARAM, lParam: w.LPARAM) callconv(.c) w
                 break :blk 1;
             }
             if (mode == .ColChosen and vk == w.VK_SPACE) {
-                _ = w.ShowWindow(mainWindow, w.SW_HIDE);
-                mode = .Hidden;
+                hide();
                 click(CellCenter());
                 break :blk 1;
             }
@@ -63,8 +67,7 @@ pub fn keyHandler(nCode: i32, wParam: w.WPARAM, lParam: w.LPARAM) callconv(.c) w
             if (mode == .ColChosen) {
                 for (board, 0..) |key, boardPos| {
                     if (letterToVK(key) == vk) {
-                        mode = .Hidden;
-                        _ = w.ShowWindow(mainWindow, w.SW_HIDE);
+                        hide();
                         click(SubgridPos(boardPos));
                         break :blk 1;
                     }
@@ -75,11 +78,18 @@ pub fn keyHandler(nCode: i32, wParam: w.WPARAM, lParam: w.LPARAM) callconv(.c) w
     };
 }
 
+fn hide() void {
+    mode = .Hidden;
+    _ = w.ShowWindow(mainWindow, w.SW_HIDE);
+}
+
 fn placeCursor(p: pos) void {
     _ = w.SetCursorPos(p.x, p.y);
 }
 
+var lastPos = pos{ .x = 0, .y = 0 };
 fn click(p: pos) void {
+    lastPos = p;
     placeCursor(p);
     w.mouse_event(if (rightMouse) w.MOUSEEVENTF_RIGHTDOWN else w.MOUSEEVENTF_LEFTDOWN, p.x, p.y, 0, 0);
     w.mouse_event(if (rightMouse) w.MOUSEEVENTF_RIGHTUP else w.MOUSEEVENTF_LEFTUP, p.x, p.y, 0, 0);
