@@ -1,7 +1,3 @@
-pub const transparent = packRgb(180, 80, 80);
-var tBrush: ?w.HBRUSH = undefined;
-const WINDOW_CLASS_NAME = w.L("ZigBlankWindow");
-
 fn wndProc(
     hwnd: w.HWND,
     msg: u32,
@@ -97,6 +93,10 @@ const win32 = @import("win32");
 const w = win32.everything;
 const m = @import("machine.zig");
 const d = @import("drawLabels.zig");
+
+pub const transparent = packRgb(180, 80, 80);
+var tBrush: ?w.HBRUSH = undefined;
+const WINDOW_CLASS_NAME = w.L("ZigBlankWindow");
 
 extern "gdi32" fn CreateSolidBrush(
     color: u32,

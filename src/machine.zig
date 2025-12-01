@@ -1,3 +1,10 @@
+pub const horizonthal = "abcdefghijklmnopqrstuvwxyz"; // "qwfpbarstgzxcdv";
+pub const vertical = "abcdefghijklmnopqrstuvwxyz"; //"jluy;kneiom,.-";
+
+pub const boardlineLen = 10;
+pub const boardHeight = 3;
+pub const board = "qwfpbjluy;arstgkneiozxcdvmh,.-";
+
 pub fn keyHandler(nCode: i32, wParam: w.WPARAM, lParam: w.LPARAM) callconv(.c) w.LRESULT {
     return blk: {
         if (nCode == w.HC_ACTION and wParam == w.WM_KEYDOWN) {
@@ -67,13 +74,6 @@ pub fn keyHandler(nCode: i32, wParam: w.WPARAM, lParam: w.LPARAM) callconv(.c) w
         break :blk w.CallNextHookEx(hookHandle, nCode, wParam, lParam);
     };
 }
-
-pub const horizonthal = "qwfpbarstgzxcdvjluykneiomh"; // "qwfpbarstgzxcdv";
-pub const vertical = "qwfpbarstgzxcdvjluykneiomh"; //"jluy;kneiom,.-";
-
-pub const boardlineLen = 10;
-pub const boardHeight = 3;
-pub const board = "qwfpbjluy;arstgkneiozxcdvmh,.-";
 
 fn placeCursor(p: pos) void {
     _ = w.SetCursorPos(p.x, p.y);
