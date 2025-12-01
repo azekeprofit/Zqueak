@@ -38,8 +38,7 @@ pub fn keyHandler(nCode: i32, wParam: w.WPARAM, lParam: w.LPARAM) callconv(.c) w
             if (mode == Modes.ColChosen and vk == w.VK_SPACE) {
                 _ = w.ShowWindow(mainWindow, w.SW_HIDE);
                 mode = Modes.Hidden;
-                if (rightMouse) rightClick(CellCenter());
-                leftClick(CellCenter());
+                if (rightMouse) rightClick(CellCenter()) else leftClick(CellCenter());
                 break :blk 1;
             }
 
