@@ -11,6 +11,20 @@ pub fn keyHandler(nCode: i32, wParam: w.WPARAM, lParam: w.LPARAM) callconv(.c) w
             const kbd: *w.KBDLLHOOKSTRUCT = @ptrFromInt(@as(usize, @intCast(lParam)));
             const vk: w.VIRTUAL_KEY = @enumFromInt(kbd.vkCode);
 
+            if (vk == w.VK_F14) {
+                l.changeOnAllWindows(l.langs.koreanEn);
+                break :blk 1;
+            }
+            if (vk == w.VK_F15) {
+                l.changeOnAllWindows(l.langs.russian);
+                break :blk 1;
+            }
+
+            if (vk == w.VK_F16) {
+                l.changeOnAllWindows(l.langs.kazakh);
+                break :blk 1;
+            }
+
             if (vk == w.VK_F13 and mode == .Hidden) {
                 mode = .Grid;
                 rightMouse = false;
@@ -62,6 +76,7 @@ pub fn keyHandler(nCode: i32, wParam: w.WPARAM, lParam: w.LPARAM) callconv(.c) w
                         placeCursor(CellCenter());
                         break :blk 1;
                     }
+                    // w.LoadKeyboardLayoutA(pwszKLID: ?[*:0]const u8, Flags: ACTIVATE_KEYBOARD_LAYOUT_FLAGS)
                 }
             }
             if (mode == .ColChosen) {
@@ -151,3 +166,4 @@ pub fn letterToVK(s: u8) w.VIRTUAL_KEY {
 
 const d = @import("drawLabels.zig");
 const pos = d.pos;
+const l = @import("langSwitcher.zig");
