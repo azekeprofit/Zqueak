@@ -1,7 +1,3 @@
-pub var axisSize = pos{ .x = 0, .y = 0 };
-pub var labelSize = pos{ .x = 0, .y = 0 };
-pub var screenSize = pos{ .x = 0, .y = 0 };
-
 var label: [3:0]u16 = undefined;
 pub fn drawLabels(hwnd: ?w.HWND) void {
     const hInstance = w.GetModuleHandleW(null);
@@ -33,10 +29,10 @@ pub fn drawLabels(hwnd: ?w.HWND) void {
     );
 
     label[1] = @intCast(' ');
-    for (0..m.horizonthal.len) |i| {
-        label[2] = m.horizonthal[i];
-        for (0..m.vertical.len) |j| {
-            label[0] = m.vertical[j];
+    for (0.., m.horizonthal) |i, hLetter| {
+        label[2] = hLetter;
+        for (0.., m.vertical) |j, vLetter| {
+            label[0] = vLetter;
             const x: i32 = @divTrunc((@as(i32, @intCast(i)) * screenSize.x), axisSize.x);
             const y: i32 = @divTrunc((@as(i32, @intCast(j)) * screenSize.y), axisSize.y);
             const newLabel = w.CreateWindowExW(.{}, w.L("STATIC"), &label, .{
@@ -54,11 +50,16 @@ pub fn drawLabels(hwnd: ?w.HWND) void {
     }
 }
 
+pub var axisSize = pos{ .x = 0, .y = 0 };
+pub var labelSize = pos{ .x = 0, .y = 0 };
+pub var screenSize = pos{ .x = 0, .y = 0 };
+
+pub var g_hFont: ?w.HFONT = undefined;
+
 const win32 = @import("win32");
 const w = win32.everything;
 const m = @import("machine.zig");
 
-pub var g_hFont: ?w.HFONT = undefined;
 pub const pos = struct {
     x: i32,
     y: i32,
