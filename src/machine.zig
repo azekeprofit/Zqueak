@@ -1,9 +1,9 @@
 pub const horizonthal = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"; // "QWFPBARSTGZXCDV";
 pub const vertical = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"; //"JLUY;KNEIOM,.-"
 
-pub const boardlineLen = 10;
-pub const boardHeight = 3;
-pub const board: *const [boardlineLen * boardHeight:0]u8 = "QWFPBJLUY;ARSTGKNEIOZXCDVMH,.-";
+pub const boardlineLen = 5;
+pub const boardHeight = 6;
+pub const board: *const [boardlineLen * boardHeight:0]u8 = "QWFPBARSTGZXCDVJLUY;KNEIOMH,.-";
 
 pub fn keyHandler(nCode: i32, wParam: w.WPARAM, lParam: w.LPARAM) callconv(.c) w.LRESULT {
     return blk: {
@@ -28,18 +28,11 @@ pub fn keyHandler(nCode: i32, wParam: w.WPARAM, lParam: w.LPARAM) callconv(.c) w
             if (vk == w.VK_F13 and mode == .Hidden) {
                 mode = .Grid;
                 rightMouse = false;
-                _ = w.ShowWindow(mainWindow, w.SW_SHOWMAXIMIZED);
                 break :blk 1;
             }
 
             if (vk == w.VK_F13 and mode == .Grid) {
                 w.PostQuitMessage(0);
-                break :blk 1;
-            }
-
-            if (vk == w.VK_SPACE and mode == .Grid) {
-                mode = .ColChosen;
-                placeCursor(lastPos);
                 break :blk 1;
             }
 
@@ -51,39 +44,20 @@ pub fn keyHandler(nCode: i32, wParam: w.WPARAM, lParam: w.LPARAM) callconv(.c) w
                 rightMouse = !rightMouse;
                 break :blk 1;
             }
-            if (mode == .ColChosen and vk == w.VK_SPACE) {
-                hide();
-                click(CellCenter());
-                break :blk 1;
-            }
 
             if (mode == .Grid) {
-                for (vertical, 0..) |first, i| {
-                    if (letterToVK(first) == vk) {
-                        rightMouse = false;
-                        mode = .RowChosen;
-                        cursor.y = @intCast(i);
-                        break :blk 1;
-                    }
-                }
-            }
-
-            if (mode == .RowChosen) {
-                for (horizonthal, 0..) |second, j| {
-                    if (letterToVK(second) == vk) {
-                        mode = .ColChosen;
-                        cursor.x = @intCast(j);
-                        placeCursor(CellCenter());
-                        break :blk 1;
-                    }
-                    // w.LoadKeyboardLayoutA(pwszKLID: ?[*:0]const u8, Flags: ACTIVATE_KEYBOARD_LAYOUT_FLAGS)
-                }
-            }
-            if (mode == .ColChosen) {
                 for (board, 0..) |key, boardPos| {
                     if (letterToVK(key) == vk) {
-                        hide();
-                        click(SubgridPos(boardPos));
+                        _ = w.ShowWindow(mainWindow, w.SW_NORMAL);
+                        const subgrid = d.SubgridPos(boardPos, s.screenSize, pos{ .x = 0, .y = 0 });
+                        _ = w.MoveWindow(
+                            mainWindow,
+                            subgrid.x,
+                            subgrid.y,
+                            d.boardSize.x,
+                            d.boardSize.y,
+                            1,
+                        );
                         break :blk 1;
                     }
                 }
@@ -124,17 +98,6 @@ fn CellCenter() pos {
     return p;
 }
 
-fn SubgridPos(boardPos: usize) pos {
-    const subRow = boardPos / boardlineLen;
-    const subCol = boardPos % boardlineLen;
-
-    var p = CellLeftUpCorner();
-
-    p.x += @divTrunc((@as(i32, @intCast(subCol)) * d.labelSize.x), boardlineLen);
-    p.y += @divTrunc((@as(i32, @intCast(subRow)) * d.labelSize.y), boardHeight);
-    return p;
-}
-
 pub var cursor = pos{ .x = 0, .y = 0 };
 
 const win32 = @import("win32");
@@ -143,8 +106,7 @@ const w = win32.everything;
 const Modes = enum {
     Hidden,
     Grid,
-    RowChosen,
-    ColChosen,
+    GridChosen,
 };
 
 var mode: Modes = .Hidden;
