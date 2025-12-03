@@ -1,22 +1,14 @@
 var label: [3:0]u16 = undefined;
 pub fn drawLabels(hwnd: ?w.HWND) void {
     const hInstance = w.GetModuleHandleW(null);
-
-    axisSize = .{ .x = m.horizonthal.len, .y = m.vertical.len };
-    const monitor = w.MonitorFromWindow(hwnd, w.MONITOR_DEFAULTTONEAREST);
-    var info = w.MONITORINFO{ .cbSize = @sizeOf(w.MONITORINFO), .dwFlags = 0, .rcMonitor = .{ .left = 0, .bottom = 0, .right = 0, .top = 0 }, .rcWork = .{ .bottom = 0, .left = 0, .right = 0, .top = 0 } };
-
-    _ = w.GetMonitorInfoW(monitor, &info);
-
-    screenSize = .{ .x = info.rcMonitor.right - info.rcMonitor.left, .y = info.rcMonitor.bottom - info.rcMonitor.top };
-    labelSize = .{ .x = @divTrunc(screenSize.x, axisSize.x), .y = @divTrunc(screenSize.y, axisSize.y) };
+    labelSize = .{ .x = @divTrunc(s.screenSize.x, s.axisSize.x), .y = @divTrunc(s.screenSize.y, s.axisSize.y) };
 
     g_hFont = w.CreateFontW(
         20,
         0,
         0,
         0,
-        w.FW_DEMIBOLD,
+        w.FW_BOLD,
         0,
         0,
         0,
@@ -25,7 +17,7 @@ pub fn drawLabels(hwnd: ?w.HWND) void {
         w.CLIP_DEFAULT_PRECIS,
         w.CLEARTYPE_QUALITY,
         w.FF_DONTCARE,
-        w.L("Segoe UI"),
+        w.L("Proforma"),
     );
 
     label[1] = @intCast(' ');
@@ -33,8 +25,8 @@ pub fn drawLabels(hwnd: ?w.HWND) void {
         label[2] = hLetter;
         for (0.., m.vertical) |j, vLetter| {
             label[0] = vLetter;
-            const x: i32 = @divTrunc((@as(i32, @intCast(i)) * screenSize.x), axisSize.x);
-            const y: i32 = @divTrunc((@as(i32, @intCast(j)) * screenSize.y), axisSize.y);
+            const x: i32 = @divTrunc((@as(i32, @intCast(i)) * s.screenSize.x), s.axisSize.x);
+            const y: i32 = @divTrunc((@as(i32, @intCast(j)) * s.screenSize.y), s.axisSize.y);
             const newLabel = w.CreateWindowExW(.{}, w.L("STATIC"), &label, .{
                 .VISIBLE = 1,
                 .CHILD = 1,
@@ -50,17 +42,12 @@ pub fn drawLabels(hwnd: ?w.HWND) void {
     }
 }
 
-pub var axisSize = pos{ .x = 0, .y = 0 };
 pub var labelSize = pos{ .x = 0, .y = 0 };
-pub var screenSize = pos{ .x = 0, .y = 0 };
 
 pub var g_hFont: ?w.HFONT = undefined;
 
 const win32 = @import("win32");
 const w = win32.everything;
 const m = @import("machine.zig");
-
-pub const pos = struct {
-    x: i32,
-    y: i32,
-};
+const s = @import("screen.zig");
+const pos = s.pos;

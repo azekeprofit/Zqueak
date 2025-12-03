@@ -16,8 +16,6 @@ pub fn changeOnAllWindows(l: langs) void {
     _ = w.EnumWindows(tryToChange, 0);
 }
 
-const win32 = @import("win32");
-const w = win32.everything;
 var lang: langs = .koreanEn;
 pub const langs = enum { koreanEn, russian, kazakh };
 
@@ -27,3 +25,6 @@ pub extern "user32" fn PostMessageW(
     wParam: w.WPARAM,
     lParam: w.HKL,
 ) callconv(.winapi) w.BOOL;
+
+const win32 = @import("win32");
+const w = win32.everything;

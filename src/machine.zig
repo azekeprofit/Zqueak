@@ -3,7 +3,7 @@ pub const vertical = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"; //"JLUY;KNEIOM,.-"
 
 pub const boardlineLen = 10;
 pub const boardHeight = 3;
-pub const board = "QWFPBJLUY;ARSTGKNEIOZXCDVMH,.-";
+pub const board: *const [boardlineLen * boardHeight:0]u8 = "QWFPBJLUY;ARSTGKNEIOZXCDVMH,.-";
 
 pub fn keyHandler(nCode: i32, wParam: w.WPARAM, lParam: w.LPARAM) callconv(.c) w.LRESULT {
     return blk: {
@@ -112,8 +112,8 @@ fn click(p: pos) void {
 
 fn CellLeftUpCorner() pos {
     return .{
-        .x = @divTrunc(cursor.x * d.screenSize.x, d.axisSize.x),
-        .y = @divTrunc(cursor.y * d.screenSize.y, d.axisSize.y),
+        .x = @divTrunc(cursor.x * s.screenSize.x, s.axisSize.x),
+        .y = @divTrunc(cursor.y * s.screenSize.y, s.axisSize.y),
     };
 }
 
@@ -153,17 +153,18 @@ var rightMouse = false;
 pub var mainWindow: ?w.HWND = undefined;
 pub var hookHandle: ?w.HHOOK = undefined;
 
-pub fn letterToVK(s: u8) w.VIRTUAL_KEY {
-    return switch (s) {
+pub fn letterToVK(letter: u8) w.VIRTUAL_KEY {
+    return switch (letter) {
         '-' => w.VK_RETURN,
         ';' => w.VK_OEM_1,
         ',' => w.VK_OEM_COMMA,
         '.' => w.VK_OEM_PERIOD,
 
-        else => @enumFromInt(s),
+        else => @enumFromInt(letter),
     };
 }
 
 const d = @import("drawLabels.zig");
-const pos = d.pos;
+const s = @import("screen.zig");
+const pos = s.pos;
 const l = @import("langSwitcher.zig");

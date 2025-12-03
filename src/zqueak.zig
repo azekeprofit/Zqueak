@@ -21,6 +21,7 @@ fn wndProc(
         // },
         w.WM_MOUSEACTIVATE => w.MA_NOACTIVATE,
         w.WM_CREATE => {
+            s.initScreen(hwnd);
             d.drawLabels(hwnd);
             return 0;
         },
@@ -85,6 +86,7 @@ const win32 = @import("win32");
 const w = win32.everything;
 const m = @import("machine.zig");
 const d = @import("drawLabels.zig");
+const s = @import("screen.zig");
 
 pub const transparent = packRgb(180, 80, 80);
 var tBrush: ?w.HBRUSH = undefined;
