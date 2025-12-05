@@ -5,6 +5,8 @@ pub const boardlineLen = 5;
 pub const boardHeight = 6;
 pub const board: *const [boardlineLen * boardHeight:0]u8 = "QWFPBARSTGZXCDVJLUY;KNEIOMH,.-";
 
+var lastBoardPos: ?usize = null;
+
 pub fn keyHandler(nCode: i32, wParam: w.WPARAM, lParam: w.LPARAM) callconv(.c) w.LRESULT {
     return blk: {
         if (nCode == w.HC_ACTION and wParam == w.WM_KEYDOWN) {
@@ -44,20 +46,37 @@ pub fn keyHandler(nCode: i32, wParam: w.WPARAM, lParam: w.LPARAM) callconv(.c) w
                 rightMouse = !rightMouse;
                 break :blk 1;
             }
-
             if (mode == .Grid) {
                 for (board, 0..) |key, boardPos| {
                     if (letterToVK(key) == vk) {
-                        _ = w.ShowWindow(mainWindow, w.SW_NORMAL);
-                        const subgrid = d.SubgridPos(boardPos, s.screenSize, pos{ .x = 0, .y = 0 });
-                        _ = w.MoveWindow(
-                            mainWindow,
-                            subgrid.x,
-                            subgrid.y,
-                            d.boardSize.x,
-                            d.boardSize.y,
-                            1,
-                        );
+                        if (lastBoardPos != boardPos) {
+                            const subgrid = d.SubgridPos(boardPos, s.screenSize, pos{ .x = 0, .y = 0 });
+
+                            _ = w.ShowWindow(mainWindow, w.SW_NORMAL);
+                            _ = w.MoveWindow(
+                                mainWindow,
+                                subgrid.x,
+                                subgrid.y,
+                                d.boardSize.x,
+                                d.boardSize.y,
+                                1,
+                            );
+                            lastBoardPos = boardPos;
+                            break :blk 1;
+                        } else {
+                            mode = .GridChosen;
+                            break :blk 1;
+                        }
+                    }
+                }
+            }
+            if (mode == .GridChosen) {
+                for (board, 0..) |key, boardPos| {
+                    if (letterToVK(key) == vk) {
+                        const corner = d.SubgridPos(lastBoardPos.?, s.screenSize, pos{ .x = 0, .y = 0 });
+                        const cell = d.SubgridPos(boardPos, d.boardSize, corner);
+                        click(cell);
+                        hide();
                         break :blk 1;
                     }
                 }

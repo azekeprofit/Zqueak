@@ -6,6 +6,14 @@
         {
             "label": "zig build",
             "type": "shell",
+            "command": "zig build",
+            "problemMatcher": [
+                "$zig"
+            ],
+        },
+        {
+            "label": "zig build release",
+            "type": "shell",
             "command": "zig build -Doptimize=ReleaseSmall",
             "problemMatcher": [
                 "$zig"
