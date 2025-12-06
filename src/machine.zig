@@ -52,15 +52,7 @@ pub fn keyHandler(nCode: i32, wParam: w.WPARAM, lParam: w.LPARAM) callconv(.c) w
                         if (lastBoardPos != boardPos) {
                             const subgrid = d.SubgridPos(boardPos, s.screenSize, pos{ .x = 0, .y = 0 });
 
-                            _ = w.ShowWindow(mainWindow, w.SW_NORMAL);
-                            _ = w.MoveWindow(
-                                mainWindow,
-                                subgrid.x,
-                                subgrid.y,
-                                d.boardSize.x,
-                                d.boardSize.y,
-                                1,
-                            );
+                            _ = w.SetWindowPos(mainWindow, w.HWND_TOPMOST, subgrid.x, subgrid.y, d.boardSize.x, d.boardSize.y, .{ .SHOWWINDOW = 1 });
                             lastBoardPos = boardPos;
                             break :blk 1;
                         } else {
@@ -74,7 +66,9 @@ pub fn keyHandler(nCode: i32, wParam: w.WPARAM, lParam: w.LPARAM) callconv(.c) w
                 for (board, 0..) |key, boardPos| {
                     if (letterToVK(key) == vk) {
                         const corner = d.SubgridPos(lastBoardPos.?, s.screenSize, pos{ .x = 0, .y = 0 });
-                        const cell = d.SubgridPos(boardPos, d.boardSize, corner);
+                        var cell = d.SubgridPos(boardPos, d.boardSize, corner);
+                        cell.x += d.labelSize.x >> 1;
+                        cell.y += d.labelSize.y >> 1;
                         click(cell);
                         hide();
                         break :blk 1;
@@ -88,7 +82,7 @@ pub fn keyHandler(nCode: i32, wParam: w.WPARAM, lParam: w.LPARAM) callconv(.c) w
 
 fn hide() void {
     mode = .Hidden;
-    _ = w.ShowWindow(mainWindow, w.SW_HIDE);
+    _ = w.SetWindowPos(mainWindow, w.HWND_TOPMOST, 0, 0, 0, 0, .{ .HIDEWINDOW = 1 });
 }
 
 fn placeCursor(p: pos) void {
