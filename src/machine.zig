@@ -11,6 +11,10 @@ pub fn keyHandler(nCode: i32, wParam: w.WPARAM, lParam: w.LPARAM) callconv(.c) w
             const kbd: *w.KBDLLHOOKSTRUCT = @ptrFromInt(@as(usize, @intCast(lParam)));
             const vk: w.VIRTUAL_KEY = @enumFromInt(kbd.vkCode);
 
+            if (vk == w.VK_F17) {
+                _ = w.SendMessageW(@ptrFromInt(0xFFFF), w.WM_SYSCOMMAND, w.SC_MONITORPOWER, 2);
+                break :blk 1;
+            }
             if (vk == w.VK_F14) {
                 l.changeOnAllWindows(l.langs.koreanEn);
                 break :blk 1;
