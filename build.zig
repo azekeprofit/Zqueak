@@ -24,8 +24,6 @@ pub fn build(b: *std.Build) void {
 
     exe.subsystem = .Windows;
 
-    exe.linkLibC();
-
     exe.root_module.addImport("win32", win32_mod);
 
     b.installArtifact(exe);
