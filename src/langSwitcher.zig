@@ -6,7 +6,7 @@ fn tryToChange(hWnd: w.HWND, _: w.LPARAM) callconv(.winapi) w.BOOL {
             .kazakh => w.L("0000043F"),
         };
         const hkl = w.LoadKeyboardLayoutW(langId, w.KLF_ACTIVATE) orelse @panic("language not found");
-        _ = PostMessageW(hWnd, w.WM_INPUTLANGCHANGEREQUEST, 0, hkl);
+        _ = w.PostMessageW(hWnd, w.WM_INPUTLANGCHANGEREQUEST, 0, @bitCast(@intFromPtr(hkl))); // cast HKL into LPARAM (isize)
     }
     return 1;
 }
@@ -18,13 +18,6 @@ pub fn changeOnAllWindows(l: langs) void {
 
 var lang: langs = .koreanEn;
 pub const langs = enum { koreanEn, russian, kazakh };
-
-pub extern "user32" fn PostMessageW(
-    hWnd: ?w.HWND,
-    Msg: u32,
-    wParam: w.WPARAM,
-    lParam: w.HKL,
-) callconv(.winapi) w.BOOL;
 
 const win32 = @import("win32");
 const w = win32.everything;
