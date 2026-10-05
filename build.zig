@@ -23,7 +23,7 @@ pub fn build(b: *std.Build) void {
         .root_module = mod,
     });
 
-    exe.subsystem = .Windows;
+    exe.subsystem = .windows;
 
     exe.root_module.addImport("win32", win32_mod);
 
