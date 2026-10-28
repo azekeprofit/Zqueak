@@ -11,6 +11,20 @@ pub fn keyHandler(nCode: i32, wParam: w.WPARAM, lParam: w.LPARAM) callconv(.c) w
             const kbd: *w.KBDLLHOOKSTRUCT = @ptrFromInt(@as(usize, @intCast(lParam)));
             const vk: w.VIRTUAL_KEY = @enumFromInt(kbd.vkCode);
 
+            const now = w.GetTickCount64();
+            const mouseTimeout:u64 = 400;
+
+            if (vk == w.VK_N and (now-lastMouseTick)<mouseTimeout) {
+                mouseClick(currentMouse(), .left);
+                break :blk 1;
+            }
+
+            if (vk == w.VK_OEM_1 and (now-lastMouseTick)<mouseTimeout) {
+                mouseClick(currentMouse(), .right);
+                break :blk 1;
+            }
+
+
             if (vk == w.VK_F17) {
                 _ = w.SendMessageW(@ptrFromInt(0xFFFF), w.WM_SYSCOMMAND, w.SC_MONITORPOWER, 2);
                 break :blk 1;
@@ -93,8 +107,15 @@ pub fn keyHandler(nCode: i32, wParam: w.WPARAM, lParam: w.LPARAM) callconv(.c) w
                 }
             }
         }
-        break :blk w.CallNextHookEx(hookHandle, nCode, wParam, lParam);
+        break :blk w.CallNextHookEx(kbHookHandle, nCode, wParam, lParam);
     };
+}
+
+pub fn mouseHandler(nCode: i32, wParam: w.WPARAM, lParam: w.LPARAM) callconv(.c) w.LRESULT {
+    if (nCode == w.HC_ACTION and wParam == w.WM_MOUSEMOVE) {
+        lastMouseTick=w.GetTickCount64();
+    }
+    return w.CallNextHookEx(mouseHookHandle, nCode, wParam, lParam);
 }
 
 fn hide() void {
@@ -106,12 +127,26 @@ fn placeCursor(p: pos) void {
     _ = w.SetCursorPos(p.x, p.y);
 }
 
+fn currentMouse() pos {
+    var r: pos = undefined;
+     if(w.GetCursorPos(&r)==0){
+         @panic("can't get mouse position");
+     }
+     return r;
+}
+
+const mouseButton=enum { left, right };
+
+fn mouseClick(p:pos, button:mouseButton) void {
+    w.mouse_event(if (button==.right) w.MOUSEEVENTF_RIGHTDOWN else w.MOUSEEVENTF_LEFTDOWN, p.x, p.y, 0, 0);
+    w.mouse_event(if (button==.right) w.MOUSEEVENTF_RIGHTUP else w.MOUSEEVENTF_LEFTUP, p.x, p.y, 0, 0);
+}
+
 var lastPos = pos{ .x = 0, .y = 0 };
 fn click(p: pos) void {
     lastPos = p;
     placeCursor(p);
-    w.mouse_event(if (rightMouse) w.MOUSEEVENTF_RIGHTDOWN else w.MOUSEEVENTF_LEFTDOWN, p.x, p.y, 0, 0);
-    w.mouse_event(if (rightMouse) w.MOUSEEVENTF_RIGHTUP else w.MOUSEEVENTF_LEFTUP, p.x, p.y, 0, 0);
+    mouseClick(p, if(rightMouse) .right else .left);
 }
 
 fn CellLeftUpCorner() pos {
@@ -155,7 +190,9 @@ var mode: Modes = .Hidden;
 var rightMouse = false;
 
 pub var mainWindow: ?w.HWND = undefined;
-pub var hookHandle: ?w.HHOOK = undefined;
+pub var kbHookHandle: ?w.HHOOK = undefined;
+pub var mouseHookHandle: ?w.HHOOK = undefined;
+pub var lastMouseTick: u64=0;
 
 pub fn letterToVK(letter: u8) w.VIRTUAL_KEY {
     return switch (letter) {

@@ -7,7 +7,8 @@ fn wndProc(
     return switch (msg) {
         w.WM_DESTROY => {
             if (d.g_hFont) |h| _ = w.DeleteObject(h);
-            if (m.hookHandle) |h| _ = w.UnhookWindowsHookEx(h);
+            if (m.kbHookHandle) |h| _ = w.UnhookWindowsHookEx(h);
+            if (m.mouseHookHandle) |h| _ = w.UnhookWindowsHookEx(h);
 
             w.PostQuitMessage(0);
             return 0;
@@ -69,8 +70,13 @@ pub fn main() !void {
 
     // _ = w.ShowWindow(hwnd, w.SW_SHOWMAXIMIZED);
 
-    m.hookHandle = w.SetWindowsHookExW(w.WH_KEYBOARD_LL, m.keyHandler, hInstance, 0);
-    if (m.hookHandle == null) {
+    m.kbHookHandle = w.SetWindowsHookExW(w.WH_KEYBOARD_LL, m.keyHandler, hInstance, 0);
+    if (m.kbHookHandle == null) {
+        return;
+    }
+
+    m.mouseHookHandle = w.SetWindowsHookExW(w.WH_MOUSE_LL, m.mouseHandler, hInstance, 0);
+    if (m.mouseHookHandle == null) {
         return;
     }
 

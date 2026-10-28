@@ -13,8 +13,5 @@ pub var axisSize = pos{ .x = 0, .y = 0 };
 
 const win32 = @import("win32");
 const w = win32.everything;
-pub const pos = struct {
-    x: i32,
-    y: i32,
-};
+pub const pos = win32.foundation.POINT;
 const m = @import("machine.zig");
