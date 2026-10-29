@@ -13,10 +13,10 @@ pub fn drawLabels(hwnd: ?w.HWND) void {
         0,
         0,
         @backingInt(w.DEFAULT_CHARSET),
-        w.OUT_DEFAULT_PRECIS,
-        w.CLIP_DEFAULT_PRECIS,
-        w.CLEARTYPE_QUALITY,
-        w.FF_DONTCARE,
+        @backingInt(w.OUT_DEFAULT_PRECIS),
+        @backingInt(w.CLIP_DEFAULT_PRECIS),
+        @backingInt(w.CLEARTYPE_QUALITY),
+        @backingInt(w.FF_DONTCARE),
         w.L("Proforma"),
     );
 

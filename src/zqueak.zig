@@ -65,7 +65,7 @@ pub fn main() !void {
         null,
     ) orelse @panic("Couldn't create window");
 
-    _ = w.SetLayeredWindowAttributes(m.mainWindow, 0, 20, w.LWA_ALPHA);
+    _ = w.SetLayeredWindowAttributes(m.mainWindow, w.COLORREF.black, 20, w.LWA_ALPHA);
     _ = w.SetWindowLongW(m.mainWindow, w.GWL_STYLE, @bitCast(w.WS_POPUP));
 
     // _ = w.ShowWindow(hwnd, w.SW_SHOWMAXIMIZED);
@@ -94,7 +94,7 @@ const m = @import("machine.zig");
 const d = @import("drawLabels.zig");
 const s = @import("screen.zig");
 
-pub const transparent = packRgb(180, 80, 80);
+pub const transparent = w.COLORREF.rgb(180, 80, 80);
 var tBrush: ?w.HBRUSH = undefined;
 const WINDOW_CLASS_NAME = w.L("ZigBlankWindow");
 

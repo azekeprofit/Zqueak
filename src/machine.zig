@@ -5,102 +5,121 @@ pub const boardlineLen = 10;
 pub const boardHeight = 3;
 pub const board: *const [boardlineLen * boardHeight:0]u8 = "QWFPBJLUY;ARSTGKNEIOZXCDVMH,.-";
 
-
 pub fn keyHandler(nCode: i32, wParam: w.WPARAM, lParam: w.LPARAM) callconv(.c) w.LRESULT {
     return blk: {
-        if (nCode == w.HC_ACTION and wParam == w.WM_KEYDOWN) {
-            const vk=getKey(lParam);
-            const now = w.GetTickCount64();
+        if (nCode == w.HC_ACTION) {
 
-            if (vk == w.VK_N and (now-lastMouseTick)<mouseTimeout) {
-                mouseClick(currentMouse(), .left);
-                break :blk 1;
-            }
-
-            if (vk == w.VK_OEM_1 and (now-lastMouseTick)<mouseTimeout) {
-                mouseClick(currentMouse(), .right);
-                break :blk 1;
-            }
-
-
-            if (vk == w.VK_F17) {
-                _ = w.SendMessageW(@ptrFromInt(0xFFFF), w.WM_SYSCOMMAND, w.SC_MONITORPOWER, 2);
-                break :blk 1;
-            }
-            if (vk == w.VK_F14) {
-                l.changeOnAllWindows(l.langs.koreanEn);
-                break :blk 1;
-            }
-            if (vk == w.VK_F15) {
-                l.changeOnAllWindows(l.langs.russian);
-                break :blk 1;
-            }
-
-            if (vk == w.VK_F16) {
-                l.changeOnAllWindows(l.langs.kazakh);
-                break :blk 1;
-            }
-
-            if (vk == w.VK_F13 and mode == .Hidden) {
-                mode = .Grid;
-                rightMouse = false;
-                _ = w.ShowWindow(mainWindow, w.SW_SHOWMAXIMIZED);
-                break :blk 1;
-            }
-
-            if (vk == w.VK_F13 and mode == .Grid) {
-                w.PostQuitMessage(0);
-                break :blk 1;
-            }
-
-            if (vk == w.VK_SPACE and mode == .Grid) {
-                mode = .ColChosen;
-                placeCursor(lastPos);
-                break :blk 1;
-            }
-
-            if (vk == w.VK_ESCAPE and mode != .Hidden) {
-                hide();
-                break :blk 1;
-            }
-            if (vk == w.VK_TAB and mode != .Hidden) {
-                rightMouse = !rightMouse;
-                break :blk 1;
-            }
-            if (mode == .ColChosen and vk == w.VK_SPACE) {
-                hide();
-                click(CellCenter());
-                break :blk 1;
-            }
-
-            if (mode == .Grid) {
-                for (vertical, 0..) |first, i| {
-                    if (letterToVK(first) == vk) {
-                        rightMouse = false;
-                        mode = .RowChosen;
-                        cursor.y = @intCast(i);
-                        break :blk 1;
-                    }
+            if (wParam == w.WM_KEYUP and mode==.LeftMouseButtonHeld) {
+                const vk = getKey(lParam);
+                if (vk == w.VK_N) {
+                    mouseClick(w.MOUSEEVENTF_LEFTUP, currentMouse());
+                    mode=.Hidden;
+                    break :blk 1;
                 }
             }
-
-            if (mode == .RowChosen) {
-                for (horizonthal, 0..) |second, j| {
-                    if (letterToVK(second) == vk) {
-                        mode = .ColChosen;
-                        cursor.x = @intCast(j);
-                        placeCursor(CellCenter());
-                        break :blk 1;
-                    }
-                    // w.LoadKeyboardLayoutA(pwszKLID: ?[*:0]const u8, Flags: ACTIVATE_KEYBOARD_LAYOUT_FLAGS)
+            if (wParam == w.WM_KEYUP and mode==.RightMouseButtonHeld) {
+                const vk = getKey(lParam);
+                if (vk == w.VK_OEM_1) {
+                    mouseClick(w.MOUSEEVENTF_RIGHTUP, currentMouse());
+                    mode=.Hidden;
+                    break :blk 1;
                 }
             }
-            if (mode == .ColChosen) {
-                for (board, 0..) |key, boardPos| {
-                    if (letterToVK(key) == vk) {
-                        hide();
-                        click(SubgridPos(boardPos));
-                        break :blk 1;
+            if (wParam == w.WM_KEYDOWN) {
+                const vk = getKey(lParam);
+                const now = w.GetTickCount64();
+
+                if (vk == w.VK_N and (now - lastMouseTick) < mouseTimeout) {
+                    mouseClick(w.MOUSEEVENTF_LEFTDOWN, currentMouse());
+                    mode=.LeftMouseButtonHeld;
+                    break :blk 1;
+                }
+
+                if (vk == w.VK_OEM_1 and (now - lastMouseTick) < mouseTimeout) {
+                    mouseClick(w.MOUSEEVENTF_RIGHTDOWN, currentMouse());
+                    mode=.RightMouseButtonHeld;
+                    break :blk 1;
+                }
+
+                if (vk == w.VK_F17) {
+                    _ = w.SendMessageW(@ptrFromInt(0xFFFF), w.WM_SYSCOMMAND, w.SC_MONITORPOWER, 2);
+                    break :blk 1;
+                }
+                if (vk == w.VK_F14) {
+                    l.changeOnAllWindows(l.langs.koreanEn);
+                    break :blk 1;
+                }
+                if (vk == w.VK_F15) {
+                    l.changeOnAllWindows(l.langs.russian);
+                    break :blk 1;
+                }
+
+                if (vk == w.VK_F16) {
+                    l.changeOnAllWindows(l.langs.kazakh);
+                    break :blk 1;
+                }
+
+                if (vk == w.VK_F13 and mode == .Hidden) {
+                    mode = .Grid;
+                    rightMouse = false;
+                    _ = w.ShowWindow(mainWindow, w.SW_SHOWMAXIMIZED);
+                    break :blk 1;
+                }
+
+                if (vk == w.VK_F13 and mode == .Grid) {
+                    w.PostQuitMessage(0);
+                    break :blk 1;
+                }
+
+                if (vk == w.VK_SPACE and mode == .Grid) {
+                    mode = .ColChosen;
+                    placeCursor(lastPos);
+                    break :blk 1;
+                }
+
+                if (vk == w.VK_ESCAPE and mode != .Hidden) {
+                    hide();
+                    break :blk 1;
+                }
+                if (vk == w.VK_TAB and mode != .Hidden) {
+                    rightMouse = !rightMouse;
+                    break :blk 1;
+                }
+                if (mode == .ColChosen and vk == w.VK_SPACE) {
+                    hide();
+                    click(CellCenter());
+                    break :blk 1;
+                }
+
+                if (mode == .Grid) {
+                    for (vertical, 0..) |first, i| {
+                        if (letterToVK(first) == vk) {
+                            rightMouse = false;
+                            mode = .RowChosen;
+                            cursor.y = @intCast(i);
+                            break :blk 1;
+                        }
+                    }
+                }
+
+                if (mode == .RowChosen) {
+                    for (horizonthal, 0..) |second, j| {
+                        if (letterToVK(second) == vk) {
+                            mode = .ColChosen;
+                            cursor.x = @intCast(j);
+                            placeCursor(CellCenter());
+                            break :blk 1;
+                        }
+                        // w.LoadKeyboardLayoutA(pwszKLID: ?[*:0]const u8, Flags: ACTIVATE_KEYBOARD_LAYOUT_FLAGS)
+                    }
+                }
+                if (mode == .ColChosen) {
+                    for (board, 0..) |key, boardPos| {
+                        if (letterToVK(key) == vk) {
+                            hide();
+                            click(SubgridPos(boardPos));
+                            break :blk 1;
+                        }
                     }
                 }
             }
@@ -111,7 +130,7 @@ pub fn keyHandler(nCode: i32, wParam: w.WPARAM, lParam: w.LPARAM) callconv(.c) w
 
 pub fn mouseHandler(nCode: i32, wParam: w.WPARAM, lParam: w.LPARAM) callconv(.c) w.LRESULT {
     if (nCode == w.HC_ACTION and wParam == w.WM_MOUSEMOVE) {
-        lastMouseTick=w.GetTickCount64();
+        lastMouseTick = w.GetTickCount64();
     }
     return w.CallNextHookEx(mouseHookHandle, nCode, wParam, lParam);
 }
@@ -127,24 +146,23 @@ fn placeCursor(p: pos) void {
 
 fn currentMouse() pos {
     var r: pos = undefined;
-     if(w.GetCursorPos(&r)==0){
-         @panic("can't get mouse position");
-     }
-     return r;
+    if (w.GetCursorPos(&r) == 0) {
+        @panic("can't get mouse position");
+    }
+    return r;
 }
 
-const mouseButton=enum { left, right };
-
-fn mouseClick(p:pos, button:mouseButton) void {
-    w.mouse_event(if (button==.right) w.MOUSEEVENTF_RIGHTDOWN else w.MOUSEEVENTF_LEFTDOWN, p.x, p.y, 0, 0);
-    w.mouse_event(if (button==.right) w.MOUSEEVENTF_RIGHTUP else w.MOUSEEVENTF_LEFTUP, p.x, p.y, 0, 0);
+fn mouseClick(flags: w.MOUSE_EVENT_FLAGS, p: pos) void {
+    w.mouse_event(flags, p.x, p.y, 0, 0);
 }
 
 var lastPos = pos{ .x = 0, .y = 0 };
 fn click(p: pos) void {
     lastPos = p;
     placeCursor(p);
-    mouseClick(p, if(rightMouse) .right else .left);
+
+    mouseClick(if (rightMouse) w.MOUSEEVENTF_RIGHTDOWN else w.MOUSEEVENTF_LEFTDOWN, p);
+    mouseClick(if (rightMouse) w.MOUSEEVENTF_RIGHTUP else w.MOUSEEVENTF_LEFTUP, p);
 }
 
 fn CellLeftUpCorner() pos {
@@ -189,11 +207,11 @@ const Modes = enum {
 var mode: Modes = .Hidden;
 var rightMouse = false;
 
-const mouseTimeout:u64 = 400;
+const mouseTimeout: u64 = 400;
 pub var mainWindow: ?w.HWND = undefined;
 pub var kbHookHandle: ?w.HHOOK = undefined;
 pub var mouseHookHandle: ?w.HHOOK = undefined;
-pub var lastMouseTick: u64=0;
+pub var lastMouseTick: u64 = 0;
 
 pub fn letterToVK(letter: u8) w.VIRTUAL_KEY {
     return switch (letter) {
@@ -206,7 +224,7 @@ pub fn letterToVK(letter: u8) w.VIRTUAL_KEY {
     };
 }
 
-fn getKey(lParam:w.LPARAM) w.VIRTUAL_KEY {
+fn getKey(lParam: w.LPARAM) w.VIRTUAL_KEY {
     const kbd: *w.KBDLLHOOKSTRUCT = @ptrFromInt(@as(usize, @intCast(lParam)));
     return @fromBackingInt(@intCast(kbd.vkCode));
 }
