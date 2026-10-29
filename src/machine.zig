@@ -5,14 +5,12 @@ pub const boardlineLen = 10;
 pub const boardHeight = 3;
 pub const board: *const [boardlineLen * boardHeight:0]u8 = "QWFPBJLUY;ARSTGKNEIOZXCDVMH,.-";
 
+
 pub fn keyHandler(nCode: i32, wParam: w.WPARAM, lParam: w.LPARAM) callconv(.c) w.LRESULT {
     return blk: {
         if (nCode == w.HC_ACTION and wParam == w.WM_KEYDOWN) {
-            const kbd: *w.KBDLLHOOKSTRUCT = @ptrFromInt(@as(usize, @intCast(lParam)));
-            const vk: w.VIRTUAL_KEY = @enumFromInt(kbd.vkCode);
-
+            const vk=getKey(lParam);
             const now = w.GetTickCount64();
-            const mouseTimeout:u64 = 400;
 
             if (vk == w.VK_N and (now-lastMouseTick)<mouseTimeout) {
                 mouseClick(currentMouse(), .left);
@@ -184,11 +182,14 @@ const Modes = enum {
     Grid,
     RowChosen,
     ColChosen,
+    LeftMouseButtonHeld,
+    RightMouseButtonHeld,
 };
 
 var mode: Modes = .Hidden;
 var rightMouse = false;
 
+const mouseTimeout:u64 = 400;
 pub var mainWindow: ?w.HWND = undefined;
 pub var kbHookHandle: ?w.HHOOK = undefined;
 pub var mouseHookHandle: ?w.HHOOK = undefined;
@@ -201,8 +202,13 @@ pub fn letterToVK(letter: u8) w.VIRTUAL_KEY {
         ',' => w.VK_OEM_COMMA,
         '.' => w.VK_OEM_PERIOD,
 
-        else => @enumFromInt(letter),
+        else => @fromBackingInt(letter),
     };
+}
+
+fn getKey(lParam:w.LPARAM) w.VIRTUAL_KEY {
+    const kbd: *w.KBDLLHOOKSTRUCT = @ptrFromInt(@as(usize, @intCast(lParam)));
+    return @fromBackingInt(@intCast(kbd.vkCode));
 }
 
 const d = @import("drawLabels.zig");
