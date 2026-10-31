@@ -22,9 +22,9 @@ pub fn drawLabels(hwnd: ?w.HWND) void {
 
     label[1] = @intCast(' ');
     for (0.., m.horizonthal) |i, hLetter| {
-        label[2] = hLetter;
+        label[0] = hLetter;
         for (0.., m.vertical) |j, vLetter| {
-            label[0] = vLetter;
+            label[2] = vLetter;
             const x: i32 = @divTrunc((@as(i32, @intCast(i)) * s.screenSize.x), s.axisSize.x);
             const y: i32 = @divTrunc((@as(i32, @intCast(j)) * s.screenSize.y), s.axisSize.y);
             const newLabel = w.CreateWindowExW(.{}, w.L("STATIC"), &label, .{
@@ -32,7 +32,7 @@ pub fn drawLabels(hwnd: ?w.HWND) void {
                 .CHILD = 1,
                 .BORDER = 1,
                 .ACTIVECAPTION = 1, // .CENTER
-            }, x, y, labelSize.x, labelSize.y, hwnd, null, hInstance, null) orelse @panic("Failed creating label");
+            }, x, y, labelSize.x, labelSize.y, hwnd, @ptrFromInt(i+100), hInstance, null) orelse @panic("Failed creating label");
             _ = w.SendMessageW(newLabel, w.WM_SETFONT, @intCast(@intFromPtr(g_hFont)), 1);
 
             // _ = w.SetTextColor(w.GetDC(newLabel), z.packRgb(255, 255, 255)); // white text

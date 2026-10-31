@@ -13,13 +13,15 @@ fn wndProc(
             w.PostQuitMessage(0);
             return 0;
         },
-        // w.WM_CTLCOLORSTATIC => {
-        //     if (w.IsWindow(hwnd) != 0) {
-        //         _ = w.SetBkColor(@ptrFromInt(wParam), transparent);
-        //         return @intCast(@intFromPtr(w.GetStockObject(w.NULL_BRUSH)));
-        //     }
-        //     return 0;
-        // },
+         w.WM_CTLCOLORSTATIC => {
+             const hwndStatic = @as(w.HWND, @ptrFromInt(@as(usize,@bitCast(lParam))));
+             if (m.mode == .ColChosen and w.GetDlgCtrlID(hwndStatic) == (100+m.cursor.x)) {
+                 const hdc=@as(w.HDC, @ptrFromInt(wParam));
+                 _ = w.SetBkColor(hdc, w.COLORREF.rgb(50,200,50));
+                 return @intCast(@intFromPtr(tBrush));
+             }
+             return 0;
+        },
         w.WM_MOUSEACTIVATE => w.MA_NOACTIVATE,
         w.WM_CREATE => {
             s.initScreen(hwnd);
@@ -72,12 +74,12 @@ pub fn main() !void {
 
     m.kbHookHandle = w.SetWindowsHookExW(w.WH_KEYBOARD_LL, m.keyHandler, hInstance, 0);
     if (m.kbHookHandle == null) {
-        return;
+        @panic("couldn't register keyboard hook");
     }
 
     m.mouseHookHandle = w.SetWindowsHookExW(w.WH_MOUSE_LL, m.mouseHandler, hInstance, 0);
     if (m.mouseHookHandle == null) {
-        return;
+        @panic("couldn't register mouse hook");
     }
 
     var msg: w.MSG = undefined;
@@ -97,9 +99,3 @@ const s = @import("screen.zig");
 pub const transparent = w.COLORREF.rgb(180, 80, 80);
 var tBrush: ?w.HBRUSH = undefined;
 const WINDOW_CLASS_NAME = w.L("ZigBlankWindow");
-
-pub fn packRgb(r: u8, g: u8, b: u8) u32 {
-    return (@as(u32, b) << 16) |
-        (@as(u32, g) << 8) |
-        (@as(u32, r));
-}

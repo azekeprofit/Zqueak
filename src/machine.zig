@@ -71,49 +71,54 @@ pub fn keyHandler(nCode: i32, wParam: w.WPARAM, lParam: w.LPARAM) callconv(.c) w
                     break :blk 1;
                 }
 
-                if (vk == w.VK_SPACE and mode == .Grid) {
-                    mode = .ColChosen;
-                    placeCursor(lastPos);
-                    break :blk 1;
-                }
-
                 if (vk == w.VK_ESCAPE and mode != .Hidden) {
                     hide();
                     break :blk 1;
                 }
+
                 if (vk == w.VK_TAB and mode != .Hidden) {
                     rightMouse = !rightMouse;
                     break :blk 1;
                 }
-                if (mode == .ColChosen and vk == w.VK_SPACE) {
+
+
+                if (vk == w.VK_SPACE and mode == .Grid) {
+                    mode = .RowChosen;
+                    placeCursor(lastPos);
+                    break :blk 1;
+                }
+
+
+                if (vk == w.VK_SPACE and mode == .RowChosen) {
                     hide();
                     click(CellCenter());
                     break :blk 1;
                 }
 
                 if (mode == .Grid) {
-                    for (vertical, 0..) |first, i| {
+                    for (horizonthal, 0..) |first, i| {
                         if (letterToVK(first) == vk) {
                             rightMouse = false;
-                            mode = .RowChosen;
-                            cursor.y = @intCast(i);
+                            mode = .ColChosen;
+                            cursor.x = @intCast(i);
+                            updateWindow();
                             break :blk 1;
                         }
                     }
                 }
 
-                if (mode == .RowChosen) {
-                    for (horizonthal, 0..) |second, j| {
+                if (mode == .ColChosen) {
+                    for (vertical, 0..) |second, j| {
                         if (letterToVK(second) == vk) {
-                            mode = .ColChosen;
-                            cursor.x = @intCast(j);
+                            mode = .RowChosen;
+                            cursor.y = @intCast(j);
                             placeCursor(CellCenter());
+                            updateWindow();
                             break :blk 1;
                         }
-                        // w.LoadKeyboardLayoutA(pwszKLID: ?[*:0]const u8, Flags: ACTIVATE_KEYBOARD_LAYOUT_FLAGS)
                     }
                 }
-                if (mode == .ColChosen) {
+                if (mode == .RowChosen) {
                     for (board, 0..) |key, boardPos| {
                         if (letterToVK(key) == vk) {
                             hide();
@@ -204,7 +209,7 @@ const Modes = enum {
     RightMouseButtonHeld,
 };
 
-var mode: Modes = .Hidden;
+pub var mode: Modes = .Hidden;
 var rightMouse = false;
 
 const mouseTimeout: u64 = 400;
@@ -212,6 +217,10 @@ pub var mainWindow: ?w.HWND = undefined;
 pub var kbHookHandle: ?w.HHOOK = undefined;
 pub var mouseHookHandle: ?w.HHOOK = undefined;
 pub var lastMouseTick: u64 = 0;
+
+fn updateWindow() void {
+    _ = w.InvalidateRect(mainWindow, null, 1);
+}
 
 pub fn letterToVK(letter: u8) w.VIRTUAL_KEY {
     return switch (letter) {
